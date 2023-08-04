@@ -1,0 +1,71 @@
+Scripts written by Nick Sibiryakov, June -> Aug 2023
+
+organoid_analysis.R
+
+  Purpose:
+     This R script was created to analyze neural organoid data in preparation
+     for the analysis of our own lab-created neural organoids. The script
+     utilizes the Seurat package and various other libraries for data processing
+     and analysis. It first sets up directories for storing output files. The
+     data is read from a file, and essential preprocessing steps such as finding
+     variable features, scaling, and normalization are performed. The script
+     then filters out genes related to mitochondrial and ribosomal functions.
+     Clustering analysis is conducted at different resolutions, and UMAP plots
+     are generated for visualization. Marker genes are identified for each
+     cluster, and gene expression heatmaps are created. The average expression
+     for each cell type is calculated and visualized through a heatmap.
+     Enrichment analysis (ssGSEA) is performed to identify enriched gene sets
+     in each cell type. Various visualizations, including DimPlot, ridge plots,
+     and violin plots, are generated to explore the clustering and gene
+     expression patterns in the neural organoid data. The ultimate goal of this
+     analysis is to gain insights into the cellular diversity and gene
+     expression patterns within the neural organoids, which will aid in our own
+     lab's research and analysis of the lab-created neural organoids.
+
+  Data Source:
+     https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8217544/
+     GEO accession: GSE150153
+
+  Resources to Run
+    TBD
+
+  TODO:
+    TBD
+
+embryoid_analysis.R
+
+  Purpose:
+
+    This R script was developed to facilitate our lab's research on embryoids
+    and enable the processing and analysis of embryoid data using R. By loading
+    essential libraries and setting up the base directory, the code efficiently
+    reads in the raw data matrix, barcodes, and gene names from specified files.
+    It then preprocesses the data, creating a Seurat object, finding variable
+    features, and performing PCA for dimensionality reduction. The subsequent
+    UMAP visualization and clustering steps help explore the diverse cell
+    populations and gene expression patterns within the embryoid samples.
+    Additionally, the code assesses mitochondrial DNA content and generates
+    various informative visualizations, such as feature plots and violin plots.
+    The enrichment analysis further allows the identification of gene sets
+    associated with specific cell clusters, providing crucial insights into
+    early embryonic development. Overall, this concise and powerful analysis
+    pipeline empowers our lab to work with embryoids and efficiently process and
+    analyze embryoid data using R, contributing to advancing our understanding
+    of this complex model system.
+
+  Data Source:
+    https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8217544/
+    GEO accession: GSE150153
+
+  Resources to Run:
+    TBD
+    
+  TODO:
+    - Go back to paper and distinguish Matrigel v. other in control group, 
+      get metadata labeling for that in RDS.
+    - From extracted markers, determine which cells belong to which of the three
+      germ layers.
+    - Investigate expression of cerebellar malformation gene set in each germ
+      layer. Is there gene set enrichement in a specific germ layer? Need to
+      confirm which progenitor lineage is of greatest interest. Determine if
+      results are what we expect.

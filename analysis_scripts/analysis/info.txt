@@ -1,0 +1,11 @@
+Touchups of Nick scripts. Made executable.
+
+determine_thresholds.R
+
+  Purpose:
+    We had some different data files on the server for the organoid data -- each
+    at different stages of processing. We lost some information on preprocessing
+    thresholds, and needed to compare RDS's to recapitulate preprocessing /
+    flush out our analysis script.
+
+OTHER SCRIPTS: SEE ../Nick_scripts/info.txt
