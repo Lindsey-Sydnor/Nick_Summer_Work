@@ -46,11 +46,8 @@ package_name <- "integration"
 fxns_file <- "utilities.R"
 
 ##### Main #####
-
-# option:
 # overwrite the environment's challenge_nested_project function
 challenge_nested_project <- function(path, name) {
-  # get rid of the challenge
   return() # return nothing (overwrite)
 }
 
