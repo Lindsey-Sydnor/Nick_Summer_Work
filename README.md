@@ -1,6 +1,15 @@
 # Organoid & Embryoid Data Analysis / Preparation
 An analysis of publically-available organoid and embryoid datasets for Kimberly Aldinger's lab 2023.
 
+## Datasets
+Embryoid: <br />
+&nbsp;&nbsp;&nbsp;&nbsp; Controls extracted from [Guo's embryoid dataset](https://www.sciencedirect.com/science/article/pii/S2213671119300244)
+
+Organoid: <br />
+&nbsp;&nbsp;&nbsp;&nbsp; [Nayler's organoid dataset](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8217544/)
+
+
+
 ## [Lab Website](https://www.aldingerlab.org/)
 
 ## Contributors
