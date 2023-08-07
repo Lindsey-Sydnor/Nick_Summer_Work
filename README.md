@@ -11,5 +11,5 @@ Updated and prepared for sharing by Lindsey Sydnor.
 > Thank you, Nick!! You were an amazing asset this summer! You'll be missed.
 
 ## Contact
-lindsey.sydnor@gmail.com (Comp.)
+lindsey.sydnor@gmail.com (Comp.) <br />
 kimberly.aldinger@seattlechildrens.org (P.I.)
