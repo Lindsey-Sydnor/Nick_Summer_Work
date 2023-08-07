@@ -13,7 +13,7 @@ Organoid: <br />
 ## [Lab Website](https://www.aldingerlab.org/)
 
 ## Contributors
-Includes scripts written by Nick Sibiryakov June -> August 2023 in analysis_scripts/Nick_scripts.
+Includes scripts written by Nick Sibiryakov June &#8594; August 2023 in analysis_scripts/Nick_scripts.
 
 Updated and prepared for sharing by Lindsey Sydnor.
 
