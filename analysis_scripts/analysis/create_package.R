@@ -55,16 +55,16 @@ challenge_nested_project <- function(path, name) {
 }
 
 # Unlock the environment and bindings of the usethis package
-rlang::env_unlock(env = asNamespace('usethis'))
-rlang::env_binding_unlock(env = asNamespace('usethis'))
+rlang::env_unlock(env = asNamespace("usethis"))
+rlang::env_binding_unlock(env = asNamespace("usethis"))
 
 # Assign the challenge_nested_project function to the usethis package namespace
-assign('challenge_nested_project', challenge_nested_project,
-       envir = asNamespace('usethis'))
+assign("challenge_nested_project", challenge_nested_project,
+       envir = asNamespace("usethis"))
 
 # Lock the bindings and environment of the usethis package again
-rlang::env_binding_lock(env = asNamespace('usethis'))
-rlang::env_lock(asNamespace('usethis'))
+rlang::env_binding_lock(env = asNamespace("usethis"))
+rlang::env_lock(asNamespace("usethis"))
 
 # Create project in <parent_path> folder
 create_project(path = package_name, open = TRUE, rstudio = TRUE)
