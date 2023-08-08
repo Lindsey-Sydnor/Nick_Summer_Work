@@ -3,19 +3,33 @@
 # Purpose:
 #   TODO
 
-# THIS DOESN'T WORK
-Sys.setenv(R_INTERACTIVE = "false")
+# create_package.R first. Integration is personalized package.
 
 # load packages
-library(Seurat)
-library(dplyr)
-library(patchwork)
-library(glue)
-library(ggplot2)
-library(clustree)
-library(ggraph)
-library(pryr)
-library(integration) # made in utilities
+my_packages <- c("Seurat", "dyplr", "patchwork", "glue", "ggplot2", "clustree",
+                 "ggraph", "pryr", "integration")
+
+# define repo to install from
+options(repos = c(CRAN = "http://cran.rstudio.com"))
+
+# install / import using CRAN or Bioconductor, as appropriate
+for (pkg in my_packages) {
+  if (!require(pkg, character.only = TRUE)) {
+    tryCatch(
+      {install.packages(pkg, lib = .libPaths()[1])
+       invisible(lapply(pkg, library, character.only = TRUE))},
+      error = function(e) {
+        message("Installation via install.packages() failed. Trying
+                 BiocManager.")
+        BiocManager::install(pkg, lib = .libPaths()[1])
+        invisible(lapply(pkg, library, character.only = TRUE))
+      },
+      warning = function(w) {
+        message(w)
+      }
+    )
+  }
+}
 
 ############################ Record resource usage #############################
 
@@ -40,26 +54,34 @@ parent_dir <- dirname(script_dir)
 # Get the parent directory of the parent directory (two levels up)
 base_dir <- dirname(parent_dir)
 
-# creating output directories
-dirs <- c("images", "objs")
-for (d in dirs){
-  dir.create(file.path(base_dir, d), recursive = TRUE, showWarnings = FALSE)
-}
-
-# setting defaults
-image_dir <- file.path(base_dir, "images")
-obj_dir <- file.path(base_dir, "objs")
-data_dir <- file.path(base_dir, "data")
+# setting default dirs
+data_dir <- file.path(base_dir, "data", "organoid") # premade, stores raw data
+# refs to output dirs
+image_dir <- file.path(base_dir, "output", "images")
+obj_dir <- file.path(base_dir, "output", "objs")
+csv_dir <- file.path(base_dir, "output", "CSVs")
 umap_dir <- file.path(image_dir, "umaps")
 
-# create dirs, if not already made
-dir.create(umap_dir, showWarnings = FALSE)
+# creating output directories
+dirs <- c(image_dir, obj_dir, csv_dir, umap_dir)
+for (d in dirs){
+  dir.create(d, recursive = TRUE, showWarnings = FALSE)
+}
 
 # presets
 npcs <- 30
 
 # load object
 organoid <- readRDS(file.path(data_dir, "organoid.rds"))
+
+command <- intersect(x = c("FindIntegrationAnchors", "FindTransferAnchors"),
+                           y = Command(object = organoid))[1]
+
+Command(object = organoid, command = command, value = "normalization.method")
+
+
+# git rm ./data/embryoid/GSM3573649_D_filtered_gene_bc_matrices_h5.h5
+# git rm ./data/embryoid/GSM3573649_D_matrix.mtx
 
 # NOTE: PCA, UMAP reductions precomputed. Small dataset (1653 cells).
 
@@ -94,9 +116,13 @@ for (test in to_test) {
 # dataset came excluding cells with < 1285 unique genes... odd
 # min(organoid$nFeature_RNA) # 1285
 
-# create elbowplot
+# make outdir
+misc_dir <- file.path(image_dir, "misc")
+dir.create(misc_dir, showWarnings = FALSE)
+
+# save elbowplot to misc dir
 p <- ElbowPlot(organoid)
-ggsave(filename = file.path(d, "elbow_plot.png"), plot = p)
+ggsave(filename = file.path(misc_dir, "elbow_plot.png"), plot = p)
 
 ################################ Preprocessing ################################
 # retain cell class names in metadata
@@ -111,27 +137,104 @@ if (length(organoid@graphs) == 0) {
   organoid <- FindNeighbors(organoid, reduction = "pca", dims = 1:npcs)
 }
 
+# save checkpoint
+saveRDS(object = organoid, file = file.path(obj_dir, "organoid_updated.rds"))
+organoid <- readRDS(file.path(obj_dir, "organoid_updated.rds"))
+
+# run clustree for ideal resolution info
+clust_diagram <- integration::format_legend(clustree(organoid,
+                  prefix = "integrated_snn_res."), text_size = 7)
+
+# save to misc dir
+ggsave(filename = file.path(misc_dir, "clustree.png"), plot = clust_diagram)
+
 # rerun processing pipeline @ multiple resolutions on integrated assay:
 resolutions <- seq(0.1, 1, by = 0.1)
 
-# set outdir
+# create outdir for FindMarkers runs
+dir.create(file.path(csv_dir, "FindMarkers_run"), showWarnings = FALSE)
+
+# create image outdir
 d <- file.path(umap_dir, "pre_QC", "by_res")
 dir.create(d, showWarnings = FALSE)
 
+# make an info.txt specifying params for FindMarkers run
+file_name <- "info.txt"
+text <-
+  "FindMarkers ran with these parameters:\
+  \
+    FindMarkers(organoid, ident.1 = clust, test.use = 'wilcox',\
+                min.pct = 0.1, only.pos = FALSE, max.cells.per.ident = Inf,\
+                verbose = FALSE)"
+
+# write the text to the file
+writeLines(text, file.path(csv_dir, "FindMarkers_run", file_name))
+
 # Find clusters @ each resolution
 for (r in resolutions) {
+  # set keys and title per resolution
+  cluster_key <- paste0("res", r)
+  plot_title <- paste0("Resolution ", r)
+
+  # run FindClusters @ each r
   organoid <- FindClusters(organoid, verbose = FALSE, resolution = r)
+  organoid[[glue("integrated_snn_res.{r}")]] <- organoid$seurat_clusters
+
+  # set active ident to r of newly-computed clusters
+  Idents(organoid) <- glue("integrated_snn_res.{r}")
+
+  # create umap @ each r
   p <- DimPlot(organoid, reduction = "umap",
                group.by = glue("integrated_snn_res.{r}")) + NoAxes()
+
+  # save to "d" (set pre loop)
   ggsave(filename = file.path(d, glue("{r}.png")), plot = p)
+
+  # make a directory for each res's FindMarkers output
+  fm_dir <- file.path(csv_dir, "FindMarkers_run", glue("res{r}"))
+  dir.create(fm_dir, showWarnings = FALSE)
+
+  # set default assay to RNA for marker analysis
+  DefaultAssay(organoid) <- "RNA"
+
+  # run FindMarkers for each cluster
+  for (clust in (levels(organoid))){
+    print(glue("Running FindMarkers on cluster {clust}..."))
+
+    # run FindMarkers on RNA assay
+    cell_markers <- FindMarkers(organoid, assay = "RNA", ident.1 = clust,
+                                test.use = "wilcox", min.pct = 0.1,
+                                only.pos = FALSE,
+                                max.cells.per.ident = Inf,
+                                verbose = FALSE)
+    # save to csv
+    write.csv(x = cell_markers, file = file.path(d, glue("{clust}.csv")))
+  }
 }
 
-# save checkpoint
-saveRDS(object = organoid, file = file.path(obj_dir, "organoid_updated.rds"))
+DefaultAssay(VLMC_brain) <- "RNA" # should already be the case
 
-# run clustree for ideal resolution info
-clust_diagram <- clustree(organoid, prefix = "integrated_snn_res.")
-ggsave(filename = file.path(image_dir, "clustree.png"), plot = clust_diagram)
+for (res in resolutions) {
+  print(res)
+  cluster_key <- paste0("res", res)
+  plot_title <- paste0("Resolution ", res)
+  VLMC_brain <- FindNeighbors(VLMC_brain, dims = 1:npcs, verbose = FALSE)
+  VLMC_brain <- FindClusters(VLMC_brain, verbose = FALSE, resolution = res) 
+                              # name = cluster_key)
+  res_col <- paste0("RNA_snn_res.", res)
+  p <- DimPlot(object = VLMC_brain, reduction = "umap",
+              group.by = res_col, pt.size = 0.5, label = TRUE)
+  p <- p + theme(legend.position = "bottom") + NoAxes()
+  # Save the modified ggplot object to file
+  ggsave(filename = file.path(d, glue("{cluster_key}.png")), plot = p,
+         width = 8, height = 8, dpi = 300)
+}
+
+
+
+
+
+
 
 ############ Cell removal -- ssve RDS for optional future analysis ############
 
