@@ -1,0 +1,5 @@
+FindMarkers ran with these parameters:
+  
+    FindMarkers(organoid, ident.1 = clust, test.use = 'wilcox',
+                min.pct = 0.1, only.pos = FALSE, max.cells.per.ident = Inf,
+                verbose = FALSE)
