@@ -10,6 +10,8 @@ Organoid: <br />
 &nbsp;&nbsp;&nbsp;&nbsp; [Nayler's organoid dataset](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8217544/) <br />
 &nbsp;&nbsp;&nbsp;&nbsp; [Data download](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE150153)
 
+### Data Access (already done)
+Download from GSE website & tar -xvzf or just run data/data_accession.sh...
 
 ## [Lab Website](https://www.aldingerlab.org/)
 
