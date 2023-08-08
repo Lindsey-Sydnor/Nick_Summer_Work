@@ -63,7 +63,7 @@ save_fxn <- function(obj, file, dirs, ..., w = 8, h = 5) {
 #'                    repel = TRUE))
 #' @export
 format_legend <- function(my_plot, ..., point_size = 0.5, text_size = 5,
-                          space_legend = 0.2) {
+                          space_legend = point_size * 0.5) {
   my_plot <- my_plot +
     guides(shape = guide_legend(override.aes = list(size = point_size)),
            color = guide_legend(override.aes = list(size = point_size),
