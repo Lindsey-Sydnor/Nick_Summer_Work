@@ -3,11 +3,12 @@ An analysis of publically-available organoid and embryoid datasets for Kimberly 
 
 ## Datasets
 Embryoid: <br />
-&nbsp;&nbsp;&nbsp;&nbsp; Controls extracted from [Guo's embryoid dataset](https://www.sciencedirect.com/science/article/pii/S2213671119300244)
+&nbsp;&nbsp;&nbsp;&nbsp; Controls extracted from [Guo's embryoid dataset](https://www.sciencedirect.com/science/article/pii/S2213671119300244) <br />
+&nbsp;&nbsp;&nbsp;&nbsp; [Data download](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE125416)
 
 Organoid: <br />
-&nbsp;&nbsp;&nbsp;&nbsp; [Nayler's organoid dataset](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8217544/)
-
+&nbsp;&nbsp;&nbsp;&nbsp; [Nayler's organoid dataset](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8217544/) <br />
+&nbsp;&nbsp;&nbsp;&nbsp; [Data download](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE150153)
 
 
 ## [Lab Website](https://www.aldingerlab.org/)
