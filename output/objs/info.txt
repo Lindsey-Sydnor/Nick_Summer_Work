@@ -1,2 +1,7 @@
 organoid_QC: 
   	Not yet used in analysis other than to create images 'pre_QC' or 'pre_rem'.
+
+organoid.rds is the same file as found on the server:
+
+/active/aldinger_k/kimslab_temp/scRNA-seq/Oxford_cbl_organoids
+  20190807vs2_v3update_newganoidscombined.rds
