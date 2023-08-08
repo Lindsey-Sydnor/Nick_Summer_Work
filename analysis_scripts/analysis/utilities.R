@@ -47,13 +47,13 @@ save_fxn <- function(obj, file, dirs, ..., w = 8, h = 5) {
 #' format_legend
 #'
 #' @description Ensure single-column, appropriately-sized legend in ggplot
-#' @param my_plot (ggplot obj): \cr 
+#' @param my_plot (ggplot obj): \cr
 #'  ggplot object to return
-#' @param point_size (float): \cr 
+#' @param point_size (float): \cr
 #'  size to make points in legend
-#' @param text_size (int or double): \cr 
+#' @param text_size (int or double): \cr
 #'  size to make text in legend
-#' @param space_legend (float): \cr 
+#' @param space_legend (float): \cr
 #'  linespacing of legend
 #' @import ggplot2
 #' @return ggplot object
@@ -63,7 +63,7 @@ save_fxn <- function(obj, file, dirs, ..., w = 8, h = 5) {
 #'                    repel = TRUE))
 #' @export
 format_legend <- function(my_plot, ..., point_size = 0.5, text_size = 5,
-                          space_legend = 0.2) {
+                          space_legend = point_size * 0.5) {
   my_plot <- my_plot +
     guides(shape = guide_legend(override.aes = list(size = point_size)),
            color = guide_legend(override.aes = list(size = point_size),
