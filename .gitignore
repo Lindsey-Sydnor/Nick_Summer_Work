@@ -1,3 +1,4 @@
 # .gitignore
 data/embryoid/GSM3573649_D_matrix.mtx
 output/objs/corrected_ingtegrated_organoid.rds
+output/objs/correct_integrated_organoid.RDS

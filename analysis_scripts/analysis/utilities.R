@@ -6,14 +6,14 @@
 #   - runBIC
 #   - run_qc
 #   - findmarkers_gene2cell_mapping
-
+#   - make_expression_overlays
 # TODO: 
 #     Flush out descriptions. Format file so linter stops yelling.
 
 #' save_fxn
 #'
 #' @description Save a ggplot object to the appropriate location(s)
-#' @param obj (ggplot obj): \cr 
+#' @param obj (ggplot obj): \cr
 #'  ggplot object to save
 #' @param file (string): \cr
 #'  file name to save ggplot as (include file extension: "png" only)
@@ -25,7 +25,7 @@
 #'  directory (or directories) to save the plot in
 #' @import ggplot2 glue
 #' @return N/A
-#' @examples 
+#' @examples
 #'  save_fxn(main_plt, file = "tmp_plt1.png", dirs = c("~/endothelial/images",
 #'         "~/examples/images"))
 #' @export
@@ -524,7 +524,7 @@ run_qc <- function(seurat_obj, base_dir = getwd(), vln_by,
 
 # TODO: Finish description
 
-# Example expected structure of ref_genes_csv:
+# Example expected structure of ref_genes.csv:
 #         ref_gene_colname          ref_cell_colname
 #      "PDGFRB, FOXP1, CD34, ..."   "Purkinje Cell"
 #       "COL1, COL12, FLT1..."      "Epithelial Cell" ...
@@ -581,5 +581,73 @@ findmarkers_gene2cell_mapping <- function(obj, ref_genes_csv, findmarkers_csv,
         write.csv(complete_index, file.path(d, glue("{clust}.csv")))
       }
     }
+  }
+}
+
+
+# TODO: add description. Prob should be moved to utilities file
+#       (integration package), also include optional threshold
+# if family of genes, supply pattern
+make_expression_overlays <- function(obj, genes, group_by, outdir,
+                                     pattern = "^", threshold = 0,
+                                     verbose = FALSE) {
+  selected_cells <- c()
+  for (gene in genes_of_interest) {
+    p1 <- DimPlot(obj, reduction = "umap", group.by = group_by, pt.size = 0.5) +
+          ggtitle(gene) + NoAxes() + NoLegend()
+    # Find autoset ranges
+    xrange <- layer_scales(p1)$x$range$range
+    yrange <- layer_scales(p1)$y$range$range
+    print(gene)
+    if (startsWith(gene, pattern)) {
+      # Use grepl to identify columns (genes) that match the pattern
+      matching_genes <- rownames(obj)[grepl(gene, rownames(obj))]
+      # print(matching_genes)
+      for (matched in matching_genes) {
+        before <- length(selected_cells)
+        selected_cells <- c(selected_cells,
+                  colnames(obj)[obj@assays$RNA@data[matched, ] > threshold])
+        selected_cells <- unique(selected_cells) # prune cells already on list
+        after <- length(selected_cells)
+        if (verbose) {
+          message(print(glue("Num cells containing gene {matched}:
+                             {after - before}")))
+        }
+      }
+      } else {
+          # if gene in rownames
+          if (gene %in% rownames(obj)) {
+            before <- length(selected_cells)
+            # Create a logical condition for gene expression
+            selected_cells <-
+                        colnames(obj)[obj@assays$RNA@data[gene, ] > threshold]
+            selected_cells <- unique(selected_cells) # no duplicates
+            after <- length(selected_cells)
+            if (verbose) {
+              message(print(glue("Num cells containing gene {matched}: {after -
+                                 before}")))
+            }
+            if (length(selected_cells) > 0) {
+              # Create a subset of the VLMC_brain object containing only the
+              # selected cells
+              subset_obj <- obj[ ,selected_cells]
+              # plot
+              p2 <- DimPlot(subset_obj, reduction = "umap", label = FALSE) +
+                        NoLegend() + ggtitle(gene) +
+                        theme(plot.title = element_text(hjust = 0.5)) +
+                        xlim(xrange) + ylim(yrange) + NoAxes()
+              im <- integration::magick_overlay(main_plt = p2, trans_plt = p1,
+                                  dest = outdir,
+                                  glue("by_{my_slot}"),
+                                  filename = glue("{gene}.png"))
+            } else {
+              message(print(glue("Num cells expressing {gene} does not meet
+                                 provided threshold: {threshold}.")))
+            }
+          } else {
+            message(print(glue("{gene} is not a gene name present in Seurat
+                               object.")))
+          }
+      }
   }
 }
