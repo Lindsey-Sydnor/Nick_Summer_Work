@@ -27,7 +27,7 @@ GSE150153_RAW.tar"
 wget -P "$BASE_DIR" "$URL"
 
 # Untar and gunzip everything in organoid dir
-tar -xvf $BASE_DIR/* -C $BASE_DIR
+tar -xvzf $BASE_DIR/* -C $BASE_DIR
 
 # Remove the tar
 rm $BASE_DIR/GSE150153_RAW.tar
