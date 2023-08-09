@@ -7,7 +7,7 @@
 
 # load packages
 my_packages <- c("Seurat", "dyplr", "patchwork", "glue", "ggplot2", "clustree",
-                 "ggraph", "pryr", "integration")
+                 "ggraph", "pryr", "integration", "limma", "ggrepel")
 
 # define repo to install from
 options(repos = c(CRAN = "http://cran.rstudio.com"))
@@ -70,15 +70,6 @@ for (d in dirs){
 
 # presets
 npcs <- 30
-
-# load object -- Nick's / server's RDS was not working for me.
-# organoid <- readRDS(file.path(data_dir, "organoid.rds"))
-
-# command <- intersect(x = c("FindIntegrationAnchors", "FindTransferAnchors"),
-#                            y = Command(object = organoid))[1]
-
-# Command(object = organoid, command = command, value = "normalization.method")
-
 
 # this Nick organoid RDS wasn't working for me... start with their RDS's and see
 mg_rds <- readRDS(file.path(data_dir, "GSM4524697_NAY6153A1_125.rds"))
@@ -167,10 +158,12 @@ organoid <- IntegrateData(anchorset = rdss_anchors,
 organoid <- RunPCA(organoid, verbose = FALSE)
 organoid <- RunUMAP(organoid, reduction = "pca", dims = 1:npcs,
                     resolution = 0.8) # default res
+organoid <- FindNeighbors(organoid, reduction = "pca", dims = 1:npcs)
+organoid <- FindClusters(organoid, resolution = 0.8)
 
 # compare stim and clustering
 p1 <- DimPlot(organoid, reduction = "umap", group.by = "stim")
-p2 <- DimPlot(organoid, reduction = "umap", group.by = "SCT_snn_res.0.8",
+p2 <- DimPlot(organoid, reduction = "umap", group.by = "integrated_snn_res.0.8",
               label = TRUE, repel = TRUE)
 p <- p1 + p2
 
@@ -182,7 +175,86 @@ ggsave(filename = file.path(d, "stim_v_res0.8.png"), plot = p, width = 12,
 
 saveRDS(organoid, file = file.path(obj_dir, "correct_integrated_organoid.rds"))
 
-# NOTE: PCA, UMAP reductions precomputed. Small dataset (1653 cells).
+# FindMarkers associated w/ each condition
+organoid <- PrepSCTFindMarkers(organoid)
+
+Idents(organoid) <- "stim"
+stim_markers <- FindMarkers(organoid, assay = "SCT", ident.1 = "MG",
+                            ident.2 = "CTRL", verbose = FALSE)
+stim_markers <- tibble::rownames_to_column(stim_markers, "genes")
+
+# make volcano plots (same presets)
+volc_plot <- function(data, title, lfc_color, lfc_label,
+                      relative_to = "Control", sig_pval = 1.3) {
+  # lfc_color:  abs(LFC) threshold to color as significant
+  # lfc_label:  abs(LFC) threshold to label w/ gene names
+  # data needs a column named genes containing gene names
+  # relative_to: increased expression relative to relative_to
+  p <- ggplot(data, aes(x = avg_log2FC, y = -log10(p_val_adj), size = 1.75,
+                        alpha = 0.8, na.rm = TRUE, label = genes)) +
+    geom_point(size = 1, color = "dark gray") +
+    theme_bw(base_size = 12) + xlab(c("log2[FC]")) +
+    ylab(c("-log10[P value]")) + theme(legend.position = "none") +
+    scale_y_continuous(trans = "log1p") +
+    geom_vline(xintercept = 0, colour = "black") +
+    geom_hline(yintercept = 0, colour = "black") +
+    geom_point(data = (subset(data,
+                avg_log2FC < -lfc_color &
+                -log10(p_val_adj) > sig_pval)),
+                size = 1, color = "purple") +
+    geom_point(data = (subset(data,
+                avg_log2FC > lfc_color &
+                -log10(p_val_adj) > sig_pval)),
+                size = 1, color = "turquoise") +
+    geom_text_repel(data = (subset(data,
+              avg_log2FC < -lfc_label &
+              -log10(p_val_adj) > 2)), color = "black",
+              arrow = arrow(length = unit(0.02, "npc")), box.padding = 1,
+              size = 2, max.overlaps = Inf) +
+    geom_text_repel(data = (subset(data,
+                    avg_log2FC > lfc_label &
+                    -log10(p_val_adj) > 2)),
+                    color = "black",
+                    arrow = arrow(length = unit(0.02, "npc")),
+                    box.padding = 1, size  =  2, max.overlaps = Inf) +
+    geom_hline(yintercept = sig_pval, linetype = "dashed",
+                colour = "black") +
+    geom_vline(xintercept = lfc_color, linetype = "dashed",
+                colour = "black") +
+    geom_vline(xintercept = -lfc_color, linetype = "dashed",
+        colour = "black") +
+    labs(title = title)
+
+  # label the sig logFC cutoff vertical line
+  # extract y range of figure
+  y_limits <- ggplot_build(p)$layout$panel_params[[1]]$y.range
+  # calculate the y position for the label (10% above 0)
+  y_label <- 0.3 * y_limits[1]
+
+  # add annotations for vertical lines
+  p <- p +
+    annotate("text", x = lfc_color, y = y_label, label = lfc_color,
+             hjust = 1.25, color = "black") +
+    annotate("text", x = -lfc_color, y = y_label, label = -lfc_color,
+             hjust = 1.25, color = "black")
+
+  # add annotations for increased versus decreased genes
+  p <- p +
+    annotate("text", x = min(data$avg_log2FC) / 2, y = 0.8 * (sig_pval),
+    label = glue("Decreased Expression Relative to {relative_to}"),
+    color = "purple", size = 3) +
+    annotate("text", x = max(data$avg_log2FC) / 2, y = 0.8 * (sig_pval),
+    label = glue("Increased Expression Relative to {relative_to}"),
+    color = "turquoise", size = 3)
+  return(p)
+}
+
+p <- volc_plot(stim_markers, "MG vs. CTRL", lfc_color = 0.5, lfc_label = 1)
+d <- file.path(image_dir, "post_integrated", "volc_plots")
+dir.create(d, showWarnings = FALSE)
+ggsave(filename = file.path(d, "MG_v_CTRL.png"), plot = p)
+
+
 
 ############################## QC investigation ##############################
 

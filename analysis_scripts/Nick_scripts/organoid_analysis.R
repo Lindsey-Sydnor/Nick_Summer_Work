@@ -107,6 +107,7 @@ for (r in resolutions) {
                  group.by = glue("RNA_snn_res.{r}")) + NoAxes()
     ggsave(filename = file.path(umap_dir, glue("{r}.png")), plot = p)
 }
+head(pbmc_small[["RNA"]][[]])
 
 ############# checkpoint 2 #############
 saveRDS(object = aldinger_organoid2,
