@@ -180,7 +180,7 @@ dir.create(d, recursive = TRUE, showWarnings = FALSE)
 ggsave(filename = file.path(d, "stim_v_res0.8.png"), plot = p, width = 12,
        height = 8, units = "in")
 
-saveRDS(organoid, file = file.path(obj_dir, "correct_integrated_organoid.RDS"))
+saveRDS(organoid, file = file.path(obj_dir, "correct_integrated_organoid.rds"))
 
 # NOTE: PCA, UMAP reductions precomputed. Small dataset (1653 cells).
 
