@@ -32,6 +32,10 @@ tar -xvf $BASE_DIR/* -C $BASE_DIR
 # Remove the tar
 rm $BASE_DIR/GSE150153_RAW.tar
 
+# Write to info.txt with descriptor
+printf "Organoid\n\tGSM4524697\n\t\tMatrigel, Hashpool 1\n\tGSM4524699\n\t\t\
+Unencapsulated Controls, Hashpool 2" > $BASE_DIR/info.txt
+
 # Download GEO data for embryoid
 
 # Set BASE_DIR to the embryoid out directory
@@ -56,3 +60,7 @@ done
 
 # gunzip everything in embryoid dir
 gunzip $BASE_DIR/*.gz
+
+# Write to info.txt with descriptor
+printf "Embryoid\n\tGSM3573649\n\tControls from experiment only." > $BASE_DIR/\
+info.txt
