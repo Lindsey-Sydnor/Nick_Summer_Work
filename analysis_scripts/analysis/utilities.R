@@ -588,7 +588,7 @@ findmarkers_gene2cell_mapping <- function(obj, ref_genes_csv, findmarkers_csv,
 # TODO: add description. Prob should be moved to utilities file
 #       (integration package), also include optional threshold
 # if family of genes, supply pattern
-make_expression_overlays <- function(obj, genes, group_by, outdir,
+make_expression_overlays <- function(obj, genes_of_interest, group_by, outdir,
                                      pattern = "^", threshold = 0,
                                      verbose = FALSE) {
   selected_cells <- c()
