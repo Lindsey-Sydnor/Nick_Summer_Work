@@ -124,6 +124,9 @@ magick_overlay <- function(main_plt, trans_plt, dest, filename, ..., x_dim = 14,
   main_plt <- image_read(paste0(dest, "/tmp_plt1.png"))
   trans_plt <- image_read(paste0(dest, "/tmp_plt2.png"))
   img <- image_join(main_plt, trans_plt)
+  # remove temporary plot files
+  unlink(paste0(dest, "/tmp_plt1.png"))
+  unlink(paste0(dest, "/tmp_plt2.png"))
   img <- image_scale(img, "100X100")
   im <- image_composite(main_plt, composite_image = trans_plt,
                         operator = "dissolve", compose_args = 
@@ -588,9 +591,10 @@ findmarkers_gene2cell_mapping <- function(obj, ref_genes_csv, findmarkers_csv,
 # TODO: add description. Prob should be moved to utilities file
 #       (integration package), also include optional threshold
 # if family of genes, supply pattern
+# update to make as_set run all genes in genes_of_interest at once
 make_expression_overlays <- function(obj, genes_of_interest, group_by, outdir,
-                                     pattern = "^", threshold = 0,
-                                     verbose = FALSE) {
+                                     pattern = "^", as_set = FALSE,
+                                     threshold = 0, verbose = FALSE) {
   selected_cells <- c()
   for (gene in genes_of_interest) {
     p1 <- DimPlot(obj, reduction = "umap", group.by = group_by, pt.size = 0.5) +
@@ -600,7 +604,7 @@ make_expression_overlays <- function(obj, genes_of_interest, group_by, outdir,
     yrange <- layer_scales(p1)$y$range$range
     print(gene)
     if (startsWith(gene, pattern)) {
-      # Use grepl to identify columns (genes) that match the pattern
+      # Use grepl to identify rows (genes) that match the pattern
       matching_genes <- rownames(obj)[grepl(gene, rownames(obj))]
       # print(matching_genes)
       for (matched in matching_genes) {
