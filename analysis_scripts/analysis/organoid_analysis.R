@@ -71,17 +71,116 @@ for (d in dirs){
 # presets
 npcs <- 30
 
-# load object
-organoid <- readRDS(file.path(data_dir, "organoid.rds"))
+# load object -- Nick's / server's RDS was not working for me.
+# organoid <- readRDS(file.path(data_dir, "organoid.rds"))
 
-command <- intersect(x = c("FindIntegrationAnchors", "FindTransferAnchors"),
-                           y = Command(object = organoid))[1]
+# command <- intersect(x = c("FindIntegrationAnchors", "FindTransferAnchors"),
+#                            y = Command(object = organoid))[1]
 
-Command(object = organoid, command = command, value = "normalization.method")
+# Command(object = organoid, command = command, value = "normalization.method")
 
 
-# git rm ./data/embryoid/GSM3573649_D_filtered_gene_bc_matrices_h5.h5
-# git rm ./data/embryoid/GSM3573649_D_matrix.mtx
+# this Nick organoid RDS wasn't working for me... start with their RDS's and see
+mg_rds <- readRDS(file.path(data_dir, "GSM4524697_NAY6153A1_125.rds"))
+mg_rds <- UpdateSeuratObject(mg_rds)
+mg_rds$stim <- "MG"
+ctrl_rds <- readRDS(file.path(data_dir, "GSM4524699_NAY6153A2_678.rds"))
+ctrl_rds <- UpdateSeuratObject(ctrl_rds)
+ctrl_rds$stim <- "CTRL"
+
+# for each, perform preprocessing
+rdss <- list("MG_dataset" = mg_rds, "CTRL_dataset" = ctrl_rds)
+for (i in seq_along(rdss)) {
+  rdss[[i]] <- PercentageFeatureSet(rdss[[i]], pattern = "^MT-",
+                                    col.name = "percent.mt")
+
+  # make outdir
+  d <- file.path(image_dir, "pre_integrated", "pre_QC", names(rdss[i]))
+  dir.create(d, showWarnings = FALSE, recursive = TRUE)
+
+  # create violin plots of features of interest per hash_ID
+  to_test <- c("percent.mt", "nFeature_RNA", "nCount_RNA")
+  for (test in to_test) {
+    p <- VlnPlot(rdss[[i]], features = test)
+    ggsave(plot = p, filename = file.path(d, glue("{test}.png")))
+  }
+
+  # subset same as in their analysis (no percent.mt considered):
+  # remove non-singlet cells & threshold nFeature_RNA
+  rdss[[i]] <- subset(rdss[[i]],
+                      subset = nFeature_RNA > 500 &
+                        rdss[[i]]$hto_classification_global == "Singlet")
+
+  # retain active identity as sample-identifying antibody
+  Idents(rdss[[i]]) <- "hash_ID"
+
+  # make outdir
+  d <- file.path(image_dir, "pre_integrated", "post_QC", names(rdss[i]))
+  dir.create(d, showWarnings = FALSE, recursive = TRUE)
+
+  # create violin plots of features of interest per hash_ID
+  to_test <- c("percent.mt", "nFeature_RNA", "nCount_RNA")
+  for (test in to_test) {
+    p <- VlnPlot(rdss[[i]], features = test)
+    ggsave(plot = p, filename = file.path(d, glue("{test}.png")))
+  }
+
+  # perform rest of preprocessing
+  rdss[[i]] <- SCTransform(rdss[[i]], vars.to.regress = "percent.mt",
+                           verbose = FALSE)
+  rdss[[i]] <- RunPCA(rdss[[i]], verbose = FALSE)
+  rdss[[i]] <- RunUMAP(rdss[[i]], dims = 1:npcs, verbose = FALSE)
+  rdss[[i]] <- FindNeighbors(rdss[[i]], dims = 1:npcs, verbose = FALSE)
+  rdss[[i]] <- FindClusters(rdss[[i]], resolution = 0.8, verbose = FALSE)
+}
+
+# unpack results
+mg_rds <- rdss[[1]]
+ctrl_rds <- rdss[[2]]
+
+# create comparative plot
+p1 <- DimPlot(mg_rds, label = TRUE, reduction = "umap") + NoLegend() +
+  ggtitle("MG Dataset")
+p2 <- DimPlot(ctrl_rds, label = TRUE, reduction = "umap") + NoLegend() +
+  ggtitle("Unencapsulated Dataset")
+p <- plot_grid(p1, p2)
+
+# mkdir
+d <- file.path(image_dir, "pre_integrated")
+dir.create(d, showWarnings = FALSE)
+# save
+ggsave(filename = file.path(d, "comparative_umaps.png"), plot = p)
+
+# prepare SCT assay for integration
+features <- SelectIntegrationFeatures(object.list = rdss, nfeatures = 3000)
+rdss <- PrepSCTIntegration(object.list = rdss, anchor.features = features)
+
+# integrate datasets
+rdss_anchors <- FindIntegrationAnchors(object.list = rdss,
+                                       normalization.method = "SCT",
+                                       anchor.features = features)
+# create combined organoid object
+organoid <- IntegrateData(anchorset = rdss_anchors,
+                          normalization.method = "SCT")
+
+# create integrated reductions
+organoid <- RunPCA(organoid, verbose = FALSE)
+organoid <- RunUMAP(organoid, reduction = "pca", dims = 1:npcs,
+                    resolution = 0.8) # default res
+
+# compare stim and clustering
+p1 <- DimPlot(organoid, reduction = "umap", group.by = "stim")
+p2 <- DimPlot(organoid, reduction = "umap", group.by = "SCT_snn_res.0.8",
+              label = TRUE, repel = TRUE)
+p <- p1 + p2
+
+# create dir
+d <- file.path(image_dir, "post_integrated", "misc")
+dir.create(d, recursive = TRUE, showWarnings = FALSE)
+ggsave(filename = file.path(d, "stim_v_res0.8.png"), plot = p, width = 12,
+       height = 8, units = "in")
+
+saveRDS(organoid, file = file.path(obj_dir, "correct_integrated_organoid.RDS"))
 
 # NOTE: PCA, UMAP reductions precomputed. Small dataset (1653 cells).
 
