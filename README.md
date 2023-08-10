@@ -18,7 +18,7 @@ Download from GSE website & tar -xvzf or just run data/data_accession.sh...
 ## Contributors
 Includes scripts written by Nick Sibiryakov June &#8594; August 2023 in analysis_scripts/Nick_scripts.
 
-Updated and prepared for sharing by Lindsey Sydnor.
+Also includes updates and scripts written by Lindsey Sydnor in analysis_scripts/analysis. Repo prepared for sharing by Lindsey Sydnor.
 
 > Thank you, Nick!! You were an amazing asset this summer! You'll be missed.
 
