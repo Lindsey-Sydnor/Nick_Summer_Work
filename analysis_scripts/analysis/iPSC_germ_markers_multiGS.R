@@ -205,4 +205,5 @@ gs_vec <- list(gs1, all_GMs)
 gs_names <- list(1, "1_and_Kim")
 embryoid <- gene_set_visualizations(embryoid, gs_vec, gs_names)
 
-### TODO: something about covarying genes
+### TODO: something about covarying genes? DE expression for identified cell
+# classes?
