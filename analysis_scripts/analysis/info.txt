@@ -1,4 +1,4 @@
-Touchups of Nick scripts. Made executable.
+Lindsey's Scripts
 
 determine_thresholds.R
 
@@ -7,5 +7,3 @@ determine_thresholds.R
     at different stages of processing. We lost some information on preprocessing
     thresholds, and needed to compare RDS's to recapitulate preprocessing /
     flush out our analysis script.
-
-OTHER SCRIPTS: SEE ../Nick_scripts/info.txt
