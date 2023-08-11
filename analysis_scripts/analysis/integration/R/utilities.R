@@ -6,14 +6,14 @@
 #   - runBIC
 #   - run_qc
 #   - findmarkers_gene2cell_mapping
-
+#   - make_expression_overlays
 # TODO: 
 #     Flush out descriptions. Format file so linter stops yelling.
 
 #' save_fxn
 #'
 #' @description Save a ggplot object to the appropriate location(s)
-#' @param obj (ggplot obj): \cr 
+#' @param obj (ggplot obj): \cr
 #'  ggplot object to save
 #' @param file (string): \cr
 #'  file name to save ggplot as (include file extension: "png" only)
@@ -25,7 +25,7 @@
 #'  directory (or directories) to save the plot in
 #' @import ggplot2 glue
 #' @return N/A
-#' @examples 
+#' @examples
 #'  save_fxn(main_plt, file = "tmp_plt1.png", dirs = c("~/endothelial/images",
 #'         "~/examples/images"))
 #' @export
@@ -47,13 +47,13 @@ save_fxn <- function(obj, file, dirs, ..., w = 8, h = 5) {
 #' format_legend
 #'
 #' @description Ensure single-column, appropriately-sized legend in ggplot
-#' @param my_plot (ggplot obj): \cr 
+#' @param my_plot (ggplot obj): \cr
 #'  ggplot object to return
-#' @param point_size (float): \cr 
+#' @param point_size (float): \cr
 #'  size to make points in legend
-#' @param text_size (int or double): \cr 
+#' @param text_size (int or double): \cr
 #'  size to make text in legend
-#' @param space_legend (float): \cr 
+#' @param space_legend (float): \cr
 #'  linespacing of legend
 #' @import ggplot2
 #' @return ggplot object
@@ -124,6 +124,9 @@ magick_overlay <- function(main_plt, trans_plt, dest, filename, ..., x_dim = 14,
   main_plt <- image_read(paste0(dest, "/tmp_plt1.png"))
   trans_plt <- image_read(paste0(dest, "/tmp_plt2.png"))
   img <- image_join(main_plt, trans_plt)
+  # remove temporary plot files
+  unlink(paste0(dest, "/tmp_plt1.png"))
+  unlink(paste0(dest, "/tmp_plt2.png"))
   img <- image_scale(img, "100X100")
   im <- image_composite(main_plt, composite_image = trans_plt,
                         operator = "dissolve", compose_args = 
@@ -524,7 +527,7 @@ run_qc <- function(seurat_obj, base_dir = getwd(), vln_by,
 
 # TODO: Finish description
 
-# Example expected structure of ref_genes_csv:
+# Example expected structure of ref_genes.csv:
 #         ref_gene_colname          ref_cell_colname
 #      "PDGFRB, FOXP1, CD34, ..."   "Purkinje Cell"
 #       "COL1, COL12, FLT1..."      "Epithelial Cell" ...
@@ -581,5 +584,74 @@ findmarkers_gene2cell_mapping <- function(obj, ref_genes_csv, findmarkers_csv,
         write.csv(complete_index, file.path(d, glue("{clust}.csv")))
       }
     }
+  }
+}
+
+
+# TODO: add description. Prob should be moved to utilities file
+#       (integration package), also include optional threshold
+# if family of genes, supply pattern
+# update to make as_set run all genes in genes_of_interest at once
+make_expression_overlays <- function(obj, genes_of_interest, group_by, outdir,
+                                     pattern = "^", as_set = FALSE,
+                                     threshold = 0, verbose = FALSE) {
+  selected_cells <- c()
+  for (gene in genes_of_interest) {
+    p1 <- DimPlot(obj, reduction = "umap", group.by = group_by, pt.size = 0.5) +
+          ggtitle(gene) + NoAxes() + NoLegend()
+    # Find autoset ranges
+    xrange <- layer_scales(p1)$x$range$range
+    yrange <- layer_scales(p1)$y$range$range
+    print(gene)
+    if (startsWith(gene, pattern)) {
+      # Use grepl to identify rows (genes) that match the pattern
+      matching_genes <- rownames(obj)[grepl(gene, rownames(obj))]
+      # print(matching_genes)
+      for (matched in matching_genes) {
+        before <- length(selected_cells)
+        selected_cells <- c(selected_cells,
+                  colnames(obj)[obj@assays$RNA@data[matched, ] > threshold])
+        selected_cells <- unique(selected_cells) # prune cells already on list
+        after <- length(selected_cells)
+        if (verbose) {
+          message(print(glue("Num cells containing gene {matched}:
+                             {after - before}")))
+        }
+      }
+      } else {
+          # if gene in rownames
+          if (gene %in% rownames(obj)) {
+            before <- length(selected_cells)
+            # Create a logical condition for gene expression
+            selected_cells <-
+                        colnames(obj)[obj@assays$RNA@data[gene, ] > threshold]
+            selected_cells <- unique(selected_cells) # no duplicates
+            after <- length(selected_cells)
+            if (verbose) {
+              message(print(glue("Num cells containing gene {matched}: {after -
+                                 before}")))
+            }
+            if (length(selected_cells) > 0) {
+              # Create a subset of the VLMC_brain object containing only the
+              # selected cells
+              subset_obj <- obj[ ,selected_cells]
+              # plot
+              p2 <- DimPlot(subset_obj, reduction = "umap", label = FALSE) +
+                        NoLegend() + ggtitle(gene) +
+                        theme(plot.title = element_text(hjust = 0.5)) +
+                        xlim(xrange) + ylim(yrange) + NoAxes()
+              im <- integration::magick_overlay(main_plt = p2, trans_plt = p1,
+                                  dest = outdir,
+                                  glue("by_{my_slot}"),
+                                  filename = glue("{gene}.png"))
+            } else {
+              message(print(glue("Num cells expressing {gene} does not meet
+                                 provided threshold: {threshold}.")))
+            }
+          } else {
+            message(print(glue("{gene} is not a gene name present in Seurat
+                               object.")))
+          }
+      }
   }
 }

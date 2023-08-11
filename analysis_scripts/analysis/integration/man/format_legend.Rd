@@ -9,7 +9,7 @@ format_legend(
   ...,
   point_size = 0.5,
   text_size = 5,
-  space_legend = 0.2
+  space_legend = point_size * 0.5
 )
 }
 \arguments{

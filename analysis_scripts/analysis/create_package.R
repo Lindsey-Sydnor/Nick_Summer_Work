@@ -1,5 +1,7 @@
 #!/usr/bin/env Rscript
 
+# Author: Lindsey Sydnor
+
 # TODO: could allow install location to be supplied in call of script
 
 ##### Load Packages Needed #####

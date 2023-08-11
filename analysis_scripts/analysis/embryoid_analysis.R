@@ -1,5 +1,7 @@
 #!/usr/bin/env Rscript
 
+# Author: Lindsey Sydnor
+
 # Purpose:
 #   TODOs included...
 
@@ -39,9 +41,10 @@ base_dir <- getwd() # TODO: CHANGE FOR GIT
 data_dir <- file.path(base_dir, "data", "embryoid") # premade, stores raw data
 image_dir <- file.path(base_dir, "embryoid_output", "images")
 csv_dir <- file.path(base_dir, "embryoid_output", "CSVs")
+obj_dir <- file.path(base_dir, "embryoid_output", "objs")
 
 # creating output directories
-dirs <- c(image_dir)
+dirs <- c(image_dir, obj_dir, csv_dir)
 for (d in dirs){
   dir.create(d, recursive = TRUE, showWarnings = FALSE)
 }
@@ -146,7 +149,8 @@ for (r in resolutions) {
     xrange <- layer_scales(p1)$x$range$range
     yrange <- layer_scales(p1)$y$range$range
 
-    # make UMAP of all cells expressing this germ layer's canonical genes
+    ### make UMAP of all cells expressing this germ layer's canonical genes
+    # determine which genes are present in embryoids
     matching_genes <- intersect(rownames(embryoid), germ_markers[[germ_layer]])
     # include any cells expressing any canonical genes above threshold:
     threshold <- 0
@@ -188,6 +192,9 @@ for (r in resolutions) {
   #   write.csv(x = markers, file = file.path(fm_dir, glue("{clust}.csv")))
   # }
 }
+
+# save checkpoint for iPSC_germ_markers.R
+saveRDS(embryoid, file.path(obj_dir, "embryoid_update.rds"))
 
 # # IDK WHERE TO PUT VIOLIN PLOTS YET
 # # Visualize canonical marker genes as violin plots.

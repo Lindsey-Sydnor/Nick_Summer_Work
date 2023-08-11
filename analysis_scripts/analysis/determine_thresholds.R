@@ -1,5 +1,7 @@
 #!/usr/bin/env Rscript
 
+# Author: Lindsey Sydnor
+
 # Purpose:
 #   Determine thresholds used for preprocessing based on raw vs. processed
 #   object.

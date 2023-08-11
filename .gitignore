@@ -1,4 +1,5 @@
 # .gitignore
 data/embryoid/GSM3573649_D_matrix.mtx
+data/embryoid/GSM3573649_D_filtered_gene_bc_matrices_h5.h5
 output/objs/corrected_ingtegrated_organoid.rds
 output/objs/correct_integrated_organoid.RDS

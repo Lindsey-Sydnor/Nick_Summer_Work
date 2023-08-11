@@ -1,5 +1,7 @@
 #!/usr/bin/env Rscript
 
+# Author: Lindsey Sydnor
+
 # Purpose:
 #   TODO
 
@@ -57,9 +59,9 @@ base_dir <- dirname(parent_dir)
 # setting default dirs
 data_dir <- file.path(base_dir, "data", "organoid") # premade, stores raw data
 # refs to output dirs
-image_dir <- file.path(base_dir, "output", "images")
-obj_dir <- file.path(base_dir, "output", "objs")
-csv_dir <- file.path(base_dir, "output", "CSVs")
+image_dir <- file.path(base_dir, "oganoid_output", "images")
+obj_dir <- file.path(base_dir, "oganoid_output", "objs")
+csv_dir <- file.path(base_dir, "organoid_output", "CSVs")
 umap_dir <- file.path(image_dir, "umaps")
 
 # creating output directories
@@ -255,7 +257,6 @@ dir.create(d, showWarnings = FALSE)
 ggsave(filename = file.path(d, "MG_v_CTRL.png"), plot = p)
 
 
-
 ############################## QC investigation ##############################
 
 # set active assay to RNA
@@ -349,8 +350,7 @@ for (r in resolutions) {
 
   # run FindClusters @ each r
   organoid <- FindClusters(organoid, verbose = FALSE, resolution = r)
-  organoid[[glue("integrated_snn_res.{r}")]] <- organoid$seurat_clusters
-
+  
   # set active ident to r of newly-computed clusters
   Idents(organoid) <- glue("integrated_snn_res.{r}")
 
