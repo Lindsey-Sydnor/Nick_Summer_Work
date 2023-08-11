@@ -142,7 +142,7 @@ for (r in resolutions) {
 
     # set shared title for magick_overlay plots
     shared_title <- glue(glue("Resolution {r} {germ_layer} Canonical Gene",
-                             " Expression"))
+                              " Expression"))
     p1 <- p1 + ggtitle(shared_title)
     
     # get ranges of plot for expression overlays

@@ -1,0 +1,13 @@
+Exploring feasibility of gene set:
+
+ $Endoderm
+[1] "FOXA2" "SOX17" "GATA6" "AFP"
+
+$Mesoderm
+[1] "MESP1" "EOMES" "TBXT" "MIXL1" "HAND1" "HAND2" "TBX6"
+
+$Ectoderm
+[1] "NEUROD1" "PAX6" "SOX1" "SALL3"
+
+$Pluripotent
+[1] "POU5F1" "SOX2"
