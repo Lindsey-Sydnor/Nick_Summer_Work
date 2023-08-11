@@ -1,3 +1,5 @@
+# NOT OUR CODE. COPIED CODE TO LOOK AT FROM ANOTHER REPO.
+
 # https://github.dev/deevdevil88/10x_Human_Cerebellum_Organoid/blob/main/Organoid_Brainspan_Pseudobulk_data_comparison.Rmd
 
 brainspan_original <- read.csv(file = "./genes_matrix_csv/expression_matrix.csv", sep=",",header=F)
