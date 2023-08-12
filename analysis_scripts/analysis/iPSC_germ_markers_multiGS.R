@@ -51,7 +51,8 @@ gs1 <- list("Endoderm" = c("FOXA2", "SOX17", "GATA6", "AFP"),
 embryoid <- readRDS(file.path(obj_dir, "embryoid_update.rds"))
 
 # create visualizations for each gene set
-gene_set_visualizations <- function(seurat_obj, gene_sets, gs_names = NULL) {
+gene_set_visualizations <- function(seurat_obj, gene_sets, gs_names = NULL,
+                                    ms_thresh = 0.2) {
   i <- 1 # initialize
   for (gs in gene_sets) {
     if (is.null(gs_names)) {
@@ -68,18 +69,7 @@ gene_set_visualizations <- function(seurat_obj, gene_sets, gs_names = NULL) {
                           glue("gene_set_{gs_name}"))
     dir.create(germ_dir, recursive = TRUE, showWarnings = FALSE)
 
-    # format gene set for readability to write to info.txt in germ_dir
-    formatted_text <- paste(
-      "Exploring feasibility of gene set:\n\n",
-      paste(sapply(names(gs), function(name) {
-        paste0("$", name, "\n[1] \"", paste(gs[[name]], collapse = "\" \""),
-                "\"")
-        }), collapse = "\n\n")
-    )
-
-    # Write the text to the file
-    file_name <- "info.txt"
-    writeLines(formatted_text, file.path(germ_dir, file_name))
+    print(germ_dir)
 
     # initialize
     included_GMs <- list()
@@ -93,13 +83,32 @@ gene_set_visualizations <- function(seurat_obj, gene_sets, gs_names = NULL) {
       included_GMs[[germ_layer]] <- matching_genes
     }
 
+    # format gene set for readability to write to info.txt in germ_dir
+    formatted_text <- paste(
+      "Exploring feasibility of gene set:\n\n",
+      paste(sapply(names(gs), function(name) {
+        paste0("$", name, "\n[1] \"", paste(gs[[name]], collapse = "\" \""),
+              "\"")
+      }), collapse = "\n\n"), "\n\n",
+      "Genes actually found in dataset:\n\n",
+      paste(sapply(names(included_GMs), function(name) {
+        paste0("$", name, "\n[1] \"", paste(included_GMs[[name]],
+              collapse = "\" \""),
+              "\"")
+      }), collapse = "\n\n")
+    )
+
+    # Write the text to the file
+    file_name <- "info.txt"
+    writeLines(formatted_text, file.path(germ_dir, file_name))
+
     # initialize
     all_markers <- list() # to store the markers for each germ layer
     threshold <- 0 # set threshold for expression (0)
 
     # Define your germ layer gene sets
     germ_layers <- names(included_GMs)
-
+    
     # Loop through each germ layer
     for (germ_layer in germ_layers) {
       # make an outdir to save to for each layer
@@ -143,19 +152,19 @@ gene_set_visualizations <- function(seurat_obj, gene_sets, gs_names = NULL) {
       ecto_val <- row_values[glue("gs_{gs_name}_Ectoderm1")]
       meso_val <- row_values[glue("gs_{gs_name}_Mesoderm1")]
 
-      condition <- rowSums(row_values > 0.2) >= 2
+      condition <- rowSums(row_values > ms_thresh) >= 2
       category[condition] <- "conflicting"
 
-      condition <- pluri_val > 0.2 & rowSums(row_values > 0.2) < 2
+      condition <- pluri_val > ms_thresh & rowSums(row_values > ms_thresh) < 2
       category[condition] <- "pluripotent"
 
-      condition <- endo_val > 0.2 & rowSums(row_values > 0.2) < 2
+      condition <- endo_val > ms_thresh & rowSums(row_values > ms_thresh) < 2
       category[condition] <- "endoderm"
 
-      condition <- ecto_val > 0.2 & rowSums(row_values > 0.2) < 2
+      condition <- ecto_val > ms_thresh & rowSums(row_values > ms_thresh) < 2
       category[condition] <- "ectoderm"
 
-      condition <- meso_val > 0.2 & rowSums(row_values > 0.2) < 2
+      condition <- meso_val > ms_thresh & rowSums(row_values > ms_thresh) < 2
       category[condition] <- "mesoderm"
 
       return(category)
@@ -203,7 +212,7 @@ all_GMs <- Map(combine_and_unique, kim_GMs, gs1)
 # call fxn
 gs_vec <- list(gs1, all_GMs)
 gs_names <- list(1, "1_and_Kim")
-embryoid <- gene_set_visualizations(embryoid, gs_vec, gs_names)
+embryoid <- gene_set_visualizations(embryoid, gs_vec, gs_names, ms_thresh = 0.1)
 
 ### TODO: something about covarying genes? DE expression for identified cell
 # classes?

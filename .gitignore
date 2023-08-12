@@ -4,3 +4,4 @@ data/embryoid/GSM3573649_D_filtered_gene_bc_matrices_h5.h5
 output/objs/corrected_ingtegrated_organoid.rds
 output/objs/correct_integrated_organoid.RDS
 embryoid_output/objs/embryoid_update.rds
+embryoid_output/objs/embryoid_germ_class.rds

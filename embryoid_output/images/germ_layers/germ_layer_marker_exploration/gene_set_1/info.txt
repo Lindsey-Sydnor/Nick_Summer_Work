@@ -10,4 +10,18 @@ $Ectoderm
 [1] "NEUROD1" "PAX6" "SOX1" "SALL3"
 
 $Pluripotent
-[1] "POU5F1" "SOX2"
+[1] "POU5F1" "SOX2" 
+
+ Genes actually found in dataset:
+
+ $Endoderm
+[1] "AFP" "GATA6" "FOXA2"
+
+$Mesoderm
+[1] "MIXL1" "EOMES" "HAND1" "MESP1" "TBX6"
+
+$Ectoderm
+[1] "NEUROD1" "PAX6" "SOX1" "SALL3"
+
+$Pluripotent
+[1] "SOX2" "POU5F1"
