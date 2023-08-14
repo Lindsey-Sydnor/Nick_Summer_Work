@@ -7,6 +7,9 @@
 #   - run_qc
 #   - findmarkers_gene2cell_mapping
 #   - make_expression_overlays
+#   - rem_cells_by_umap_coord
+#   - make_power_plots
+
 # TODO: 
 #     Flush out descriptions. Format file so linter stops yelling.
 
@@ -653,5 +656,56 @@ make_expression_overlays <- function(obj, genes_of_interest, group_by, outdir,
                                object.")))
           }
       }
+  }
+}
+
+
+# Defining umap_mins & umap_maxes:
+# region 1 is first two pairs of each (-11 to -9 in x, 1 to 3 in y), region 2...
+rem_cells_by_umap_coord <- function(obj, umap_mins, umap_maxes) {
+  # Initialize an empty vector to store the results
+  cells_to_remove <- c()
+  # Iterate over the umap_min and umap_max indices with a step of 2
+  for (i in seq(1, length(umap_mins), by = 2)) {
+    # Get the indices for umap_min and umap_max
+    min_index <- i
+    max_index <- i + 1
+    
+    # Filter cell embeddings based on umap_min and umap_max
+    filtered_cells <- obj@reductions$umap@cell.embeddings[
+        obj@reductions$umap@cell.embeddings[, 1] >= umap_mins[min_index] &
+        obj@reductions$umap@cell.embeddings[, 1] <= umap_maxes[min_index] &
+        obj@reductions$umap@cell.embeddings[, 2] >= umap_mins[max_index] &
+        obj@reductions$umap@cell.embeddings[, 2] <= umap_maxes[max_index], ]
+    
+    # Append the row names to cells_to_remove
+    cells_to_remove <- c(cells_to_remove, row.names(filtered_cells))
+  }
+  message(print(glue("Removing {length(cells_to_remove)} cells.")))
+  downsamp <- obj[, !(colnames(obj) %in% cells_to_remove)]
+  return(downsamp)
+}
+
+
+# file_command because naming scheme may differ
+make_power_plots <- function(cell_types, marker_dir, markerfile_command, outdir,
+                      ngenes = 30) {
+  dir.create(outdir, recursive = TRUE, showWarnings = FALSE)
+  markers <- list()
+  for (cell_type in cell_types) {
+    markers <- read.csv(file = file.path(marker_dir, eval(markerfile_command)))
+    min_power <- min(markers$power)
+    p <- ggplot(markers[1:ngenes,], aes(x = power, y = reorder(X, power))) +
+      geom_point() +
+      labs(x = "Predictive Power", y = "Gene") +
+      xlim(min_power, 1) + # Set x-axis limits
+      theme_bw() +
+      ggtitle(glue("Cluster: {cell_type}")) +
+      # ggtitle(glue("{gsub('_', ' ', cell_type, fixed = TRUE)}")) +
+      theme(plot.title = element_text(hjust = 0.5)) +
+      theme(axis.text.y = element_text(size = max(4, 10 -
+                                length(markers$power)/10)))
+      ggsave(filename = file.path(outdir, glue("{cell_type}.png")),
+             plot = p)
   }
 }
