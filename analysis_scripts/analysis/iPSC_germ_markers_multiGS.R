@@ -214,5 +214,7 @@ gs_vec <- list(gs1, all_GMs)
 gs_names <- list(1, "1_and_Kim")
 embryoid <- gene_set_visualizations(embryoid, gs_vec, gs_names, ms_thresh = 0.1)
 
+saveRDS(embryoid, file.path(obj_dir, "embryoid_germ_class.rds"))
+
 ### TODO: something about covarying genes? DE expression for identified cell
 # classes?

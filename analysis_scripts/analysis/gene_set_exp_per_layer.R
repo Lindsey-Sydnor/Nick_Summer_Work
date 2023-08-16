@@ -3,13 +3,15 @@
 # Author: Lindsey Sydnor
 
 # Purpose:
-#   Take a seurat object and explore expression of cerebellar malformation genes
+#   Take a seurat object and explore expression of gene sets of interest between
+#   pre-identified germ layers. Explored here are genes associated with
+#   cerebellar malformations and genes found on chromosome 21.
 
 # TODO: make as script taking in path or turn into an importable utility.
 #       Address TODOs within script.
 
 my_packages <- c("Seurat", "Matrix", "glue", "ggplot2", "integration",
-                 "patchwork", "escape", "pheatmap")
+                 "patchwork", "escape", "pheatmap", "biomaRt")
 
 # define repo to install from
 options(repos = c(CRAN = "http://cran.rstudio.com"))
@@ -57,8 +59,6 @@ write.csv(included_genes,
 es <- enrichIt(obj = embryoid, gene.sets = included_genes, groups = 1000,
                method = "ssGSEA")
 
-# check not all 20,000 genes (check that it's specific to dataset composition)
-
 # add enrichment metadata
 embryoid$malf_enrich_ssGSEA <- es
 embryoid <- AddMetaData(embryoid, es)
@@ -71,8 +71,8 @@ es2 <- data.frame(embryoid[[]], Idents(embryoid))
 p <- ridgeEnrichment(es2, gene.set = "malf_genes", group = "gs_1_germ_layer",
                      add.rug = TRUE)
 
-d <- file.path(image_dir, "enrichment")
-dir.create(d, showWarnings = FALSE)
+d <- file.path(image_dir, "enrichment", "cblr_malf_genes")
+dir.create(d, recursive = TRUE, showWarnings = FALSE)
 
 ggsave(file.path(d, "GS1_ridgeplot_ssGSEA.png"), plot = p)
 
@@ -168,4 +168,121 @@ for (i in seq_along(germ_layer_names)) {
 p <- pheatmap(enrichment_matrix, cluster_rows = FALSE, fontsize = 8)
 ggsave(plot = p, filename = file.path(d, "FC_exp_heatmap.png"))
 
-# check not all 20,000 genes (check that it's specific to dataset composition)
+### investigate chromosome 21 gene expression
+
+# set new image outdir for this gene set
+d <- file.path(image_dir, "enrichment", "c21_genes")
+dir.create(d, recursive = TRUE, showWarnings = FALSE)
+
+# use biomaRt to get human genes from ensembl database
+ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+genes <- getBM(attributes = c("external_gene_name", "chromosome_name"),
+               filters = "external_gene_name",
+               values = rownames(embryoid),
+               mart = ensembl)
+
+# get list of chromosome 21 genes
+c21_genes <- subset(genes, subset = (chromosome_name == 21))$external_gene_name
+
+# find which c21 genes are found in embryoid dataset
+included_genes <- list("c21_genes" = intersect(rownames(embryoid), c21_genes))
+
+# save
+write.csv(included_genes,
+          file.path(csv_dir, "cblr_malf_genes_included.csv"),
+          row.names = FALSE)
+
+# run enrichment analysis on these genes using ssGSEA method
+es <- enrichIt(obj = embryoid, gene.sets = included_genes, groups = 1000,
+               method = "ssGSEA")
+
+# TODO figure what combo is appropriate and why -- enrichIt is fickle
+# add enrichment metadata
+embryoid[["c21_enrich_ssGSEA"]] <- es
+embryoid <- AddMetaData(embryoid, es)
+# Idents(embryoid) <- "malf_enrich_ssGSEA"
+embryoid@meta.data$active.idents <- embryoid@active.ident
+
+es2 <- data.frame(embryoid[[]], Idents(embryoid))
+
+# create ridgeplot of enrichment per germ layer category
+p <- ridgeEnrichment(es2, gene.set = "c21_genes", group = "gs_1_germ_layer",
+                     add.rug = TRUE)
+
+ggsave(file.path(d, "GS1_ridgeplot_ssGSEA.png"), plot = p)
+
+
+### heatmaps of included genes (not gene set) per germ layer
+
+# average expression for psuedobulking by germ_layer
+avg_exp <- AverageExpression(embryoid, features = included_genes[[1]],
+                             return.seurat = FALSE, assays = "SCT",
+                             group.by = "gs_1_germ_layer", verbose = FALSE)[[1]]
+# note: AverageExpression uses "data" slot by default
+
+# create heatmap of pseudobulked expression in these genes
+p <- pheatmap(avg_exp, cluster_rows = FALSE, fontsize_row = 3)
+
+ggsave(plot = p, filename = file.path(d, "average_exp_heatmap.png"))
+
+### find genes not expressed in specific germ layers
+
+# find array indices of 0 average expression (rows and column of avg_exp)
+arr_locs <- which(avg_exp == 0, arr.ind = TRUE)
+# get names of columns (germ layer names) corresponding to array indices
+named_cols <- colnames(avg_exp[, which(avg_exp == 0, arr.ind = TRUE,
+                                       useNames = TRUE)[, 2]])
+# convert to data frame
+arr_locs <- as.data.frame(arr_locs)
+# set map of data frame to not-expressed gene names and corresponding layers
+col_mapping <- setNames(named_cols, rownames(arr_locs))
+# set germ layer column
+arr_locs$col <- col_mapping[rownames(arr_locs)]
+# extract only gene names and germ layer mapping (row number inessential)
+output <- arr_locs[2]
+
+# save output
+write.table(output, file.path(csv_dir, "c21_genes_not_exp_w_layer.csv"))
+
+# TODO: append to info.txt, if already made in sequence, w/ description
+
+
+# make heatmap of comparative logFC per germ layer expression
+germ_layer_names <- unique(embryoid$gs_1_germ_layer)
+
+# set idents to germ layer ID
+Idents(embryoid) <- "gs_1_germ_layer"
+# initialize
+germ_layer_subsets <- list()
+
+# create cell subsets containing only germ layer of interest
+for (layer in germ_layer_names) {
+  germ_layer_subsets[[layer]] <- subset(embryoid, ident = layer)
+}
+
+# use AverageExpression run (also using "data" slot of SCT)
+
+# initialize enrichment matrix with germ layer names and genes of interest
+enrichment_matrix <- matrix(NA, nrow = length(germ_layer_names),
+                            ncol = length(included_genes[["c21_genes"]]))
+rownames(enrichment_matrix) <- germ_layer_names
+colnames(enrichment_matrix) <- included_genes[["c21_genes"]]
+
+for (i in seq_along(germ_layer_names)) {
+  # subset layer of interest
+  layer_subset <- germ_layer_subsets[[germ_layer_names[i]]]
+  # iterate over genes of interest
+  for (j in seq_along(included_genes[["c21_genes"]])) {
+    gene <- included_genes[["c21_genes"]][j]
+    # get average expression in this germ layer for this gene
+    gene_expression <- mean(layer_subset@assays$SCT@data[gene, ])
+    # compare expression in this germ layer against average across all germ
+    # layers
+    enrichment_matrix[i, j] <- gene_expression / mean(avg_exp[gene, ])
+  }
+}
+
+# some NANs were introduced, as there was no average expression for some genes
+# in specific germ layers
+p <- pheatmap(enrichment_matrix, cluster_rows = FALSE, fontsize_col = 3)
+ggsave(plot = p, filename = file.path(d, "FC_exp_heatmap.png"))
