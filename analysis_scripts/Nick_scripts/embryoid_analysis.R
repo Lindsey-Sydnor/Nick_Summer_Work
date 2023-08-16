@@ -85,7 +85,7 @@ read_csv <- read.csv(glue("/home/nsibir/oxford_organoid_testing/",
 cell_marks <- read_csv$X.1[3:length(read_csv$X.1)]
 cell_names <- read_csv$X[3:length(read_csv$X)]
 #save updated object
-saveRDS(object = embryonic, file = file.path(obj_dir,"updated_embryoid.rds"))
+saveRDS(object = embryonic, file = file.path(obj_dir, "updated_embryoid.rds"))
 
 # rerun processing pipeline @ multiple resolutions on integrated assay:
 resolutions <- seq(0.1, 1, by = 0.1)
