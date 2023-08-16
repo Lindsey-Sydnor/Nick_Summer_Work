@@ -225,10 +225,6 @@ submarkers <- list("Forebrain_Development" = c("LHX5", "HESX1"),
 cell_dir <- file.path(image_dir, "cell_markers")
 dir.create(cell_dir, showWarnings = FALSE)
 
-# create outdir for cell-type-specific analysis
-sub_dir <- file.path(image_dir, "submarkers")
-dir.create(sub_dir, showWarnings = FALSE)
-
 for (cell_type in names(cell_markers)) {
     # make an overlay with a FeaturePlot showing germ layer markers
     p <- FeaturePlot(embryoid, features = cell_markers[[cell_type]]) +
@@ -249,6 +245,12 @@ for (cell_type in names(cell_markers)) {
     }
 }
 
+# repeat for submarker analysis
+
+# create outdir for cell-type-specific analysis
+sub_dir <- file.path(image_dir, "submarkers")
+dir.create(sub_dir, showWarnings = FALSE)
+
 for (cell_type in names(submarkers)) {
     # make an overlay with a FeaturePlot showing germ layer markers
     p <- FeaturePlot(embryoid, features = submarkers[[cell_type]]) +
@@ -266,6 +268,10 @@ for (cell_type in names(submarkers)) {
              plot = p)
     }
 }
+
+
+# could rerun the magick marker visualizations for these genes of interest...
+# at that point, should just make a function out of it
 
 # run clustering and germ layer marker visualizations at multiple resolutions
 resolutions <- seq(0.1, 1, by = 0.1)
