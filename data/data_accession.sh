@@ -50,7 +50,13 @@ GSM3573649_D_filtered_gene_bc_matrices_h5.h5"
     "https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM3573nnn/GSM3573649/suppl/\
 GSM3573649_D_genes.tsv.gz"
     "https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM3573nnn/GSM3573649/suppl/\
-GSM3573649_D_matrix.mtx.gz"
+GSM3573649_D_matrix.mtx.gz",
+    "https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM3573nnn/GSM3573650/suppl/\
+GSM3573650_N_barcodes.tsv.gz",
+    "https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM3573nnn/GSM3573650/suppl/\
+GSM3573650_N_genes.tsv.gz",
+    "https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM3573nnn/GSM3573650/suppl/\
+GSM3573650_N_matrix.mtx.gz"
 )
 
 # Loop through the URLs and download datasets to the specified folder
