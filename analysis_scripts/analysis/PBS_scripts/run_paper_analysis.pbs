@@ -1,0 +1,11 @@
+#!/bin/bash
+#PBS -N embryoid_analysis
+#PBS -A lsyd
+#PBS -M lindsey.sydnor@seattlechildrens.org
+#PBS -q paidq
+#PBS -m abe
+#PBS -j oe
+
+BASE_DIR="/active/aldinger_k/kimslab_temp/test_nick/git_repo/Nick_Summer_Work/analysis_scripts/analysis"
+module load R/4.1.0-foss-2020b
+$BASE_DIR/embryoid_recap_paper_analysis.R > $BASE_DIR/PBS_outfiles/output_paper_analysis.log 2>&1

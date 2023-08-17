@@ -34,7 +34,8 @@ for (pkg in my_packages) {
 npcs <- 20
 
 # set paths
-base_dir <- getwd() # TODO: CHANGE FOR GIT
+# base_dir <- getwd() # TODO: CHANGE FOR GIT
+base_dir <- "/active/aldinger_k/kimslab_temp/test_nick/git_repo/Nick_Summer_Work"
 data_dir <- file.path(base_dir, "data", "embryoid") # premade, stores raw data
 obj_dir <- file.path(base_dir, "embryoid_output", "paper_analysis", "objs")
 image_dir <- file.path(base_dir, "embryoid_output", "paper_analysis", "images")
@@ -60,7 +61,6 @@ rownames(counts_ctl) <- genes_ctl$V2 # extract gene symbols, ignore ensembl IDs
 embryoid_ctl <- CreateSeuratObject(counts = counts_ctl,
                                    project = "embryoid_ctl",
                                    min.features = 200)
-
 
 # read in data for nicotine
 counts_nic <- readMM(file.path(data_dir, "GSM3573650_N_matrix.mtx"))
@@ -137,7 +137,9 @@ perform_seurat_analysis <- function(seurat_list, npcs, image_dir, obj_dir,
   for (i in seq_along(seurat_list)) {
     seurat_obj <- seurat_list[[i]]
     # get original name of seurat object
-    seurat_name <- deparse(substitute(seurat_obj))
+    seurat_name <- names(seurat_list[i])
+
+    print(seurat_name)
 
     # Subset cells based on nFeature_RNA
     seurat_obj <- subset(seurat_obj, subset = nFeature_RNA < 6000)
@@ -212,58 +214,60 @@ ds_list <- perform_seurat_analysis(ds_list, npcs, image_dir, obj_dir, csv_dir)
 
 # now subset FindMarkers values for p value less than 1%
 
+saveRDS(ds_list, file.path(base_dir, "ds_list.rds"))
+
 ### integrate the two datasets
 
-# select features that are repeatedly variable across datasets for integration
-features <- SelectIntegrationFeatures(object.list = ds_list)
-anchors <- FindIntegrationAnchors(object.list = ds_list,
-                                  anchor.features = features)
-# create combined object
-embryoid <- IntegrateData(anchorset = anchors)
+# # select features that are repeatedly variable across datasets for integration
+# features <- SelectIntegrationFeatures(object.list = ds_list)
+# anchors <- FindIntegrationAnchors(object.list = ds_list,
+#                                   anchor.features = features)
+# # create combined object
+# embryoid <- IntegrateData(anchorset = anchors)
 
-# specify that we will perform downstream analysis on the corrected data note
-# that the original unmodified data still resides in the 'RNA' assay
-DefaultAssay(embryoid) <- "integrated"
+# # specify that we will perform downstream analysis on the corrected data note
+# # that the original unmodified data still resides in the 'RNA' assay
+# DefaultAssay(embryoid) <- "integrated"
 
-# Run processing on combined
-embryoid <- FindVariableFeatures(object = embryoid,
-                                 mean.function = ExpMean,
-                                 dispersion.function = LogVMR,
-                                 x.low.cutoff = min_avg_expr,
-                                 x.high.cutoff = max_avg_expr,
-                                 y.cutoff = min_dispersion)
-embryoid <- ScaleData(embryoid, features = rownames(embryoid),
-                      vars.to.regress = c("percent.mt", "nCount_RNA"))
-embryoid <- RunPCA(embryoid,
-                   features = VariableFeatures(embryoid),
-                   npcs = npcs)
-embryoid <- RunTSNE(embryoid, reduction = "pca", dims = 1:npcs)
-embryoid <- FindNeighbors(embryoid, reduction = "pca", dims = 1:npcs)
-embryoid <- FindClusters(embryoid, resolution = 0.8)
+# # Run processing on combined
+# embryoid <- FindVariableFeatures(object = embryoid,
+#                                  mean.function = ExpMean,
+#                                  dispersion.function = LogVMR,
+#                                  x.low.cutoff = min_avg_expr,
+#                                  x.high.cutoff = max_avg_expr,
+#                                  y.cutoff = min_dispersion)
+# embryoid <- ScaleData(embryoid, features = rownames(embryoid),
+#                       vars.to.regress = c("percent.mt", "nCount_RNA"))
+# embryoid <- RunPCA(embryoid,
+#                    features = VariableFeatures(embryoid),
+#                    npcs = npcs)
+# embryoid <- RunTSNE(embryoid, reduction = "pca", dims = 1:npcs)
+# embryoid <- FindNeighbors(embryoid, reduction = "pca", dims = 1:npcs)
+# embryoid <- FindClusters(embryoid, resolution = 0.8)
 
-markers <- FindMarkers(embryoid, logfc.threshold = 0.25, min.pct = 0.25,
-                       only.pos = TRUE, assay = "RNA")
+# markers <- FindMarkers(embryoid, logfc.threshold = 0.25, min.pct = 0.25,
+#                        only.pos = TRUE, assay = "RNA")
 
-# Visualization
-p1 <- DimPlot(embryoid, reduction = "umap", group.by = "project")
-p2 <- DimPlot(emnbryooid, reduction = "umap", label = TRUE, repel = TRUE)
-p1 + p2
+# # Visualization
+# p1 <- DimPlot(embryoid, reduction = "umap", group.by = "project")
+# p2 <- DimPlot(emnbryooid, reduction = "umap", label = TRUE, repel = TRUE)
+# p1 + p2
 
-# For performing differential expression after integration, we switch back to the original
-# data
-DefaultAssay(embryoid) <- "RNA"
+# # For performing differential expression after integration, we switch back to the original
+# # data
+# DefaultAssay(embryoid) <- "RNA"
 
-# create an outdir directory for FindMarkers run
-d <- file.path(csv_dir, "combined_markers_per_clust")
+# # create an outdir directory for FindMarkers run
+# d <- file.path(csv_dir, "combined_markers_per_clust")
 
-# for cluster in whatever the combined cluster names are
-for (clust in embryoid$RNA_snn_res_0.8) {
-  clust_markers <- FindConservedMarkers(embryoid, ident.1 = clust,
-                                        grouping.var = "project",
-                                        verbose = FALSE)
-  head(clust_markers)
+# # for cluster in whatever the combined cluster names are
+# for (clust in embryoid$RNA_snn_res_0.8) {
+#   clust_markers <- FindConservedMarkers(embryoid, ident.1 = clust,
+#                                         grouping.var = "project",
+#                                         verbose = FALSE)
+#   head(clust_markers)
 
-}
+# }
 
 
-# label param set to cell type in featureplot
+# # label param set to cell type in featureplot

@@ -1,0 +1,40 @@
+Loading required package: Seurat
+Attaching SeuratObject
+Loading required package: Matrix
+Loading required package: glue
+Loading required package: ggplot2
+Loading required package: integration
+Loading required package: patchwork
+Loading required package: escape
+Loading required package: pheatmap
+Loading required package: biomaRt
+[1] 1
+Running analysis on seurat obj 'crouch' w/ gene set 'c21_genes'
+[1] "Using sets of 1000 cells. Running 140 times."
+Setting parallel calculations through a SnowParam back-end
+with workers=2 and tasks=100.
+Estimating ssGSEA scores for 1 gene sets.
+Setting parallel calculations through a SnowParam back-end
+with workers=2 and tasks=100.
+Estimating ssGSEA scores for 1 gene sets.
+Setting parallel calculations through a SnowParam back-end
+with workers=2 and tasks=100.
+Estimating ssGSEA scores for 1 gene sets.
+Setting parallel calculations through a SnowParam back-end
+with workers=2 and tasks=100.
+Estimating ssGSEA scores for 1 gene sets.
+Setting parallel calculations through a SnowParam back-end
+with workers=2 and tasks=100.
+Estimating ssGSEA scores for 1 gene sets.
+Setting parallel calculations through a SnowParam back-end
+with workers=2 and tasks=100.
+Estimating ssGSEA scores for 1 gene sets.
+Setting parallel calculations through a SnowParam back-end
+with workers=2 and tasks=100.
+Estimating ssGSEA scores for 1 gene sets.
+Setting parallel calculations through a SnowParam back-end
+with workers=2 and tasks=100.
+Estimating ssGSEA scores for 1 gene sets.
+Setting parallel calculations through a SnowParam back-end
+with workers=2 and tasks=100.
+Estimating ssGSEA scores for 1 gene sets.

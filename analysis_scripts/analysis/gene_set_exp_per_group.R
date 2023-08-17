@@ -35,13 +35,14 @@ for (pkg in my_packages) {
   }
 }
 
-base_dir <- getwd() # TODO: CHANGE FOR GIT
+# base_dir <- getwd() # TODO: CHANGE FOR GIT
+base_dir <- "/active/aldinger_k/kimslab_temp/test_nick/git_repo/Nick_Summer_Work"
 obj_dir <- file.path(base_dir, "embryoid_output", "objs")
 image_dir <- file.path(base_dir, "embryoid_output", "images")
 csv_dir <- file.path(base_dir, "embryoid_output", "CSVs")
 
 # load dataset
-embryoid <- readRDS(file.path(obj_dir, "embryoid_germ_class.rds"))
+# embryoid <- readRDS(file.path(obj_dir, "embryoid_germ_class.rds"))
 
 ### load gene sets to test
 
@@ -49,18 +50,18 @@ embryoid <- readRDS(file.path(obj_dir, "embryoid_germ_class.rds"))
 malf_genes <- read.csv(file.path(base_dir, "data", "references",
                                  "cbl_malf_genes.csv"))[[1]]
 
-# use biomaRt to get human genes from ensembl database
-ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl")
-genes <- getBM(attributes = c("external_gene_name", "chromosome_name"),
-               filters = "external_gene_name",
-               values = rownames(embryoid),
-               mart = ensembl)
+# # use biomaRt to get human genes from ensembl database
+# ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+# genes <- getBM(attributes = c("external_gene_name", "chromosome_name"),
+#                filters = "external_gene_name",
+#                values = rownames(embryoid),
+#                mart = ensembl)
 
-# get list of chromosome 21 genes
-c21_genes <- subset(genes, subset = (chromosome_name == 21))$external_gene_name
+# # get list of chromosome 21 genes
+# c21_genes <- subset(genes, subset = (chromosome_name == 21))$external_gene_name
 
-# initialize
-gene_sets <- list("malf_genes" = malf_genes, "c21_genes" = c21_genes)
+# # initialize
+# gene_sets <- list("malf_genes" = malf_genes, "c21_genes" = c21_genes)
 
 # gene list must be names list of gene sets to investigate
 # obj must be seurat object
@@ -217,10 +218,25 @@ test_gs <- function(obj, gene_lists, groupings = "gs_1_germ_layer",
 }
 
 # run on the gene sets of interest
-test_gs(embryoid, gene_sets)
+# test_gs(embryoid, gene_sets)
+
+# initialize
+# gene_sets <- list("malf_genes" = malf_genes, "c21_genes" = c21_genes)
 
 # TODO: change path if keeping
-crouch <- readRDS("~/Downloads/crouch.rds")
+crouch <- readRDS("/active/aldinger_k/kimslab_temp/scRNA-seq/brain-vasc/vascular-dev/lsyd/crouch/crouch.rds")
+
+# use biomaRt to get human genes from ensembl database
+ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+genes <- getBM(attributes = c("external_gene_name", "chromosome_name"),
+               filters = "external_gene_name",
+               values = rownames(crouch),
+               mart = ensembl)
+
+# get list of chromosome 21 genes
+c21_genes <- subset(genes, subset = (chromosome_name == 21))$external_gene_name
+
+gene_sets <- list("c21_genes" = c21_genes)
 
 test_gs(crouch, gene_sets, groupings = "cell_type", assay = "RNA",
         gene_fontsize = 7)
