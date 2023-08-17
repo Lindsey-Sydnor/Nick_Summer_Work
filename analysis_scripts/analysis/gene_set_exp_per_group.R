@@ -62,24 +62,6 @@ c21_genes <- subset(genes, subset = (chromosome_name == 21))$external_gene_name
 # initialize
 gene_sets <- list("malf_genes" = malf_genes, "c21_genes" = c21_genes)
 
-# this is iterating continuously
-
-all_gs <- getBM(attributes = c("external_gene_name", "chromosome_name"),
-                filters = "external_gene_name",
-                values = "",
-                mart = ensembl)
-
-attributes_to_retrieve <- c("external_gene_name")
-filters <- c("chromosome_name")
-# Chromosome 21 filter
-chromosome_21 <- "21"
-
-# genes <- getBM(attributes = c("external_gene_name", "chromosome_name",
-#                               "transcript_biotype"),
-#                filters = c("transcript_biotype", "chromosome_name"),
-#                values = list("protein_coding", 21), mart = ensembl)
-# nrow(genes)
-
 # gene list must be names list of gene sets to investigate
 # obj must be seurat object
 test_gs <- function(obj, gene_lists, groupings = "gs_1_germ_layer",
@@ -120,7 +102,8 @@ test_gs <- function(obj, gene_lists, groupings = "gs_1_germ_layer",
 
     # write those genes as outfile
     write.csv(included_genes,
-              file.path(csv_dir, glue("{gs_name}_genes_included.csv")),
+              file.path(csv_dir,
+              glue("{gs_name}_genes_included_in_{obj_name}.csv")),
               row.names = FALSE)
 
     # run enrichment analysis on these genes using ssGSEA method
@@ -154,7 +137,8 @@ test_gs <- function(obj, gene_lists, groupings = "gs_1_germ_layer",
                                  group.by = groupings, verbose = FALSE)[[1]]
 
     # create heatmap of pseudobulked expression in these genes
-    p <- pheatmap(avg_exp, cluster_rows = FALSE, fontsize_row = gene_fontsize)
+    p <- pheatmap(t(avg_exp), cluster_cols = FALSE,
+                  fontsize_col = gene_fontsize)
 
     ggsave(plot = p, filename = file.path(d, "average_exp_heatmap.png"))
 
@@ -180,7 +164,8 @@ test_gs <- function(obj, gene_lists, groupings = "gs_1_germ_layer",
 
       # save output
       write.table(output, file.path(csv_dir,
-                                    glue("{gs_name}_not_exp_w_layer.csv")))
+                                    glue("{gs_name}_not_exp_w_layer_in_",
+                                         "{obj_name}.csv")))
     }
 
     # TODO: append to info.txt, if already made in sequence, w/ description

@@ -9,7 +9,7 @@
 
 # load packages
 my_packages <- c("Seurat", "Matrix", "glue", "ggplot2", "integration",
-                 "patchwork")
+                 "patchwork", "clustree")
 
 # define repo to install from
 options(repos = c(CRAN = "http://cran.rstudio.com"))
@@ -61,14 +61,14 @@ rownames(counts) <- genes$V2 # extract gene symbols, ignore ensembl IDs
 
 # TODO: interesting... non-unique features
 embryoid <- CreateSeuratObject(counts = counts, project = "embryoid",
-                               min.cells = 3, min.features = 200)
+                               min.features = 200)
+embryoid <- subset(embryoid, subset = nFeature_RNA < 6000)
 
+# subset out cells with high mitochondrial content
 embryoid <- PercentageFeatureSet(embryoid, pattern = "^MT-",
                                  col.name = "percent.mt")
-pre_sub <- ncol(embryoid)
-embryoid <- subset(embryoid, subset = percent.mt < 10)
-post_sub <- ncol(embryoid)
-print(glue("Loss of {pre_sub - post_sub} after percent.mt thresh of 10"))
+embryoid <- subset(embryoid, subset = percent.mt < 20)
+ncol(embryoid) == 6766 # the num in their paper
 
 # perform preprocessing
 embryoid <- SCTransform(embryoid, vars.to.regress = "percent.mt",
@@ -83,7 +83,7 @@ germ_markers <- list("Endoderm" = c("SOX17", "FOXA2", "CXCR4", "GATA4"),
                      "Mesoderm" = c("NCAM1", "TBXT"),
                      "Ectoderm" = c("NES", "PAX6"))
 
-d <- file.path(image_dir, "umaps", "by_res")
+d <- file.path(image_dir, "by_res", toString(r), "umaps")
 dir.create(d, recursive = TRUE, showWarnings = FALSE)
 
 # create outdir for germ-layer-specific analysis
@@ -107,20 +107,26 @@ for (r in resolutions) {
   # set active ident to r of newly-computed clusters
   Idents(embryoid) <- glue("SCT_snn_res.{r}")
 
-  # create UMAP
-  p <- DimPlot(embryoid, reduction = "umap",
-                group.by = glue("SCT_snn_res.{r}"), label = TRUE) + NoAxes() +
-    NoLegend() +
-    ggtitle(glue("Resolution {r}"))
-  
-  ggsave(filename = file.path(d, glue("{r}.png")), plot = p1)
+  ### get some QC metrics
+  d <- file.path(image_dir, "by_res", toString(r))
+  dir.create(d, recursive = TRUE, showWarnings = FALSE)
 
+  # make violin plots
+  to_test <- c("percent.mt", "nFeature_RNA", "nCount_RNA")
+  for (test in to_test) {
+    p <- VlnPlot(embryoid, features = test)
+    ggsave(plot = p, filename = file.path(d, "violin_plots",
+                                          glue("{test}.png")))
+  }
+
+  # create UMAP
   p1 <- DimPlot(embryoid, reduction = "umap",
-              group.by = glue("SCT_snn_res.{r}"), label = TRUE) + NoAxes() +
+               group.by = glue("SCT_snn_res.{r}"), label = TRUE) + NoAxes() +
     NoLegend()
 
-  # save to "d" (set pre loop)
-  ggsave(filename = file.path(d, glue("{r}.png")), plot = p1)
+  p <- p1 + ggtitle(glue("Resolution {r}"))
+
+  ggsave(filename = file.path(d, glue("umap.png")), plot = p)
 
   # germ marker exploration
   for (germ_layer in names(germ_markers)) {
@@ -177,12 +183,11 @@ for (r in resolutions) {
         theme(plot.title = element_text(hjust = 0.5)) +
         NoAxes()
       im <- integration::magick_overlay(main_plt = p2, trans_plt = p1,
-                                          dest = res_dir,
-                                          filename = glue("{germ_layer}.png"),
-                                          x_dim = 14, y_dim = 14)
+                                        dest = res_dir,
+                                        filename = glue("{germ_layer}.png"),
+                                        x_dim = 14, y_dim = 14)
     }
   }
-
   # # make a directory for each res's FindMarkers output
   # fm_dir <- file.path(csv_dir, "FindMarkers_run", cluster_key)
   # dir.create(fm_dir, recursive = TRUE, showWarnings = FALSE)
@@ -197,8 +202,17 @@ for (r in resolutions) {
 # save checkpoint for iPSC_germ_markers.R
 saveRDS(embryoid, file.path(obj_dir, "embryoid_update.rds"))
 
+
+# run clustree for ideal resolution info
+clust_diagram <- format_legend(clustree(embryoid, prefix = "SCT_snn_res."),
+                               text_size = 7)
+# save to misc dir
+ggsave(filename = file.path(image_dir, "misc", "clustree.png"),
+       plot = clust_diagram)
+
+
 # has more cells excluded from analysis than their thresholding standards
-embryoid <- readRDS(file.path(obj_dir, "embryoid_update.rds"))
+# embryoid <- readRDS(file.path(obj_dir, "embryoid_update.rds"))
 
 
 ### Cell-type-specific analysis
@@ -283,15 +297,11 @@ for (r in resolutions) {
 
   # set keys and title per resolution
   cluster_key <- paste0("res", r)
-
-  # run FindClusters
-  # embryoid <- FindClusters(embryoid, verbose = FALSE, resolution = r)
   
-  # set active ident to r of newly-computed clusters
+  # set active ident to r of pre-computed clusters
   Idents(embryoid) <- glue("SCT_snn_res.{r}")
 
   # create UMAP
-
   p1 <- DimPlot(embryoid, reduction = "umap",
               group.by = glue("SCT_snn_res.{r}"), label = TRUE) + NoAxes() +
     NoLegend()
@@ -350,6 +360,17 @@ for (r in resolutions) {
   #                          verbose = FALSE)
   #   write.csv(x = markers, file = file.path(fm_dir, glue("{clust}.csv")))
   # }
+}
+
+### look @ specific expression of FOXC1 and FOXP1
+
+genes <- c("FOXC1", "FOXP1")
+for (g in genes) {
+  # make an overlay with a FeaturePlot showing germ layer markers
+  p <- FeaturePlot(embryoid, features = g) +
+    plot_annotation(glue("{g} Expression"),
+                    theme = theme(plot.title = element_text(hjust = 0.5)))
+  ggsave(file.path(image_dir, "misc", glue("{g}_feature.png")), p)
 }
 
 # # IDK WHERE TO PUT VIOLIN PLOTS YET

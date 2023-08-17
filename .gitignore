@@ -5,3 +5,4 @@ output/objs/correct_integrated_organoid.RDS
 embryoid_output/objs/embryoid_update.rds
 embryoid_output/objs/embryoid_germ_class.rds
 data/embryoid/GSM3573650_N_matrix.mtx
+/embryoid_output/paper_analysis/objs/embryoid_control.rds
