@@ -1,7 +1,7 @@
 # Organoid & Embryoid Data Analysis / Preparation
 An analysis of publically-available organoid and embryoid datasets for Kimberly Aldinger's lab 2023.
 
-# To Run
+## To Run
 Run on HPC with appropriate job scheduler commands using ./run_on_HPC.sh or run on local with ./run_on_local.sh.
 
 ## Datasets
