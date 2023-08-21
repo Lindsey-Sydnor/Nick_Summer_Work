@@ -686,25 +686,29 @@ rem_cells_by_umap_coord <- function(obj, umap_mins, umap_maxes) {
   return(downsamp)
 }
 
-
 # file_command because naming scheme may differ
+# plot_class needs to correspond to the test ran used to construct markerfile
+#   EX: "power" if "roc"" was run, "avg_log2FC" if "wilcox" was run, etc.
 make_power_plots <- function(cell_types, marker_dir, markerfile_command, outdir,
-                      ngenes = 30) {
+                      ngenes = 30, plot_class = "power") {
   dir.create(outdir, recursive = TRUE, showWarnings = FALSE)
   markers <- list()
   for (cell_type in cell_types) {
-    markers <- read.csv(file = file.path(marker_dir, eval(markerfile_command)))
-    min_power <- min(markers$power)
-    p <- ggplot(markers[1:ngenes,], aes(x = power, y = reorder(X, power))) +
+    markers <- as.data.frame(read.csv(file = file.path(marker_dir,
+                             eval(markerfile_command))))
+    min_power <- min(markers[[plot_class]])
+    # markers$plot_class <- as.factor(markers[[plot_class]])
+    p <- ggplot(markers[1:ngenes,], aes_string(x = plot_class,
+                                               y = reorder("X", plot_class))) +
       geom_point() +
-      labs(x = "Predictive Power", y = "Gene") +
+      labs(x = "Predictive Power Using {str_to_title(plot_class)}",
+           y = "Gene") +
       xlim(min_power, 1) + # Set x-axis limits
       theme_bw() +
       ggtitle(glue("Cluster: {cell_type}")) +
-      # ggtitle(glue("{gsub('_', ' ', cell_type, fixed = TRUE)}")) +
       theme(plot.title = element_text(hjust = 0.5)) +
       theme(axis.text.y = element_text(size = max(4, 10 -
-                                length(markers$power)/10)))
+                                length(markers[[plot_class]])/10)))
       ggsave(filename = file.path(outdir, glue("{cell_type}.png")),
              plot = p)
   }
