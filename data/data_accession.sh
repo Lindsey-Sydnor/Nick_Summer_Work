@@ -67,9 +67,6 @@ done
 # gunzip everything in embryoid dir
 gunzip $BASE_DIR/*.gz
 
-# remove all remaining .gz
-rm $BASE_DIR/*.gz
-
 # Write to info.txt with descriptor
 printf "Embryoid\n\tGSM3573649\n\tControls from experiment only." > $BASE_DIR/\
 info.txt
