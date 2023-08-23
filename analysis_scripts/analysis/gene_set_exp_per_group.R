@@ -107,9 +107,15 @@ test_gs <- function(obj, gene_lists, groupings = "gs_1_germ_layer",
               glue("{gs_name}_genes_included_in_{obj_name}.csv")),
               row.names = FALSE)
 
+    # included_genes <- read.csv(file.path(csv_dir,
+    #           glue("{gs_name}_genes_included_in_{obj_name}.csv")))
+
     # run enrichment analysis on these genes using ssGSEA method
     es <- enrichIt(obj = obj, gene.sets = included_genes, groups = 1000,
                    method = "ssGSEA")
+
+    # save enrichment results as an RDS
+    saveRDS(es, file.path(d, "enrichment.rds"))
 
     # add results as metadata
     obj[[glue("{gs_name}_enrich_ssGSEA")]] <- es
@@ -137,9 +143,11 @@ test_gs <- function(obj, gene_lists, groupings = "gs_1_germ_layer",
                                  return.seurat = FALSE, assays = assay,
                                  group.by = groupings, verbose = FALSE)[[1]]
 
+    col_names <- rev(colnames(avg_exp))
+    avg_exp <- avg_exp[, col_names]
     # create heatmap of pseudobulked expression in these genes
     p <- pheatmap(t(avg_exp), cluster_cols = FALSE,
-                  fontsize_col = gene_fontsize)
+                  fontsize_col = gene_fontsize, cluster_rows = FALSE)
 
     ggsave(plot = p, filename = file.path(d, "average_exp_heatmap.png"))
 
@@ -189,7 +197,8 @@ test_gs <- function(obj, gene_lists, groupings = "gs_1_germ_layer",
     # initialize enrichment matrix with germ layer names and genes of interest
     enrichment_matrix <- matrix(NA, nrow = length(group_names),
                                 ncol = length(included_genes[[gs_name]]))
-    rownames(enrichment_matrix) <- group_names
+    # keep consistent naming scheme order
+    rownames(enrichment_matrix) <- rev(levels(group_names))
     colnames(enrichment_matrix) <- included_genes[[gs_name]]
 
     for (n in seq_along(group_names)) {

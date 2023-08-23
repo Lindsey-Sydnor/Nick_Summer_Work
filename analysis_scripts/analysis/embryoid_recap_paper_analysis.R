@@ -6,7 +6,7 @@
 #   Meant to be an exact replication of embryoid body dataset analysis as in
 #   paper (not my chosen presets)
 
-my_packages <- c("Seurat", "Matrix", "glue", "ggplot2")
+my_packages <- c("Seurat", "Matrix", "glue", "ggplot2", "integration")
 
 # define repo to install from
 options(repos = c(CRAN = "http://cran.rstudio.com"))
@@ -47,22 +47,23 @@ for (d in dirs){
   dir.create(d, recursive = TRUE, showWarnings = FALSE)
 }
 
-# read in data for control
-counts_ctl <- readMM(file.path(data_dir, "GSM3573649_D_matrix.mtx"))
-# TODO: ^ large file, in .gitignore for now
-barcodes_ctl <- read.table(file.path(data_dir, "GSM3573649_D_barcodes.tsv"))
-genes_ctl <- read.table(file.path(data_dir, "GSM3573649_D_genes.tsv"))
+# # read in data for control
+# counts_ctl <- readMM(file.path(data_dir, "GSM3573649_D_matrix.mtx"))
+# # TODO: ^ large file, in .gitignore for now
+# barcodes_ctl <- read.table(file.path(data_dir, "GSM3573649_D_barcodes.tsv"))
+# genes_ctl <- read.table(file.path(data_dir, "GSM3573649_D_genes.tsv"))
 
-# construct counts matrix for Seurat
-colnames(counts_ctl) <- barcodes_ctl$V1
-rownames(counts_ctl) <- genes_ctl$V2 # extract gene symbols, ignore ensembl IDs
+# # construct counts matrix for Seurat
+# colnames(counts_ctl) <- barcodes_ctl$V1
+# rownames(counts_ctl) <- genes_ctl$V2 # extract gene symbols, ignore ensembl IDs
 
-# TODO: interesting... non-unique features
-embryoid_ctl <- CreateSeuratObject(counts = counts_ctl,
-                                   project = "embryoid_ctl",
-                                   min.features = 200)
+# # TODO: interesting... non-unique features
+# embryoid_ctl <- CreateSeuratObject(counts = counts_ctl,
+#                                    project = "embryoid_ctl",
+#                                    min.features = 200)
 
-saveRDS(embryoid_ctl, file.path(data_dir, "embryoid_control.rds"))
+# saveRDS(embryoid_ctl, file.path(data_dir, "embryoid_control.rds"))
+embryoid_ctl <- readRDS(file.path(data_dir, "embryoid_control.rds"))
 
 # read in data for nicotine
 counts_nic <- readMM(file.path(data_dir, "GSM3573650_N_matrix.mtx"))
@@ -79,7 +80,8 @@ embryoid_nic <- CreateSeuratObject(counts = counts_nic,
                                    project = "embryoid_nic",
                                    min.features = 200)
 
-saveRDS(embryoid_nic, file.path(data_dir, "embryoid_nicotine.rds"))
+# saveRDS(embryoid_nic, file.path(data_dir, "embryoid_nicotine.rds"))
+embryoid_nic <- readRDS(file.path(data_dir, "embryoid_nicotine.rds"))
 
 # embryoid_ctl <- subset(embryoid_ctl, subset = nFeature_RNA < 6000)
 
@@ -134,7 +136,6 @@ saveRDS(embryoid_nic, file.path(data_dir, "embryoid_nicotine.rds"))
 # write.csv(markers_ctl, file.path(csv_dir, "FindMarkers_control.rds"))
 # # then threshold for p val?
 
-
 perform_seurat_analysis <- function(seurat_list, npcs, image_dir, obj_dir,
                                     csv_dir, res = 0.8) {
   for (i in seq_along(seurat_list)) {
@@ -142,23 +143,23 @@ perform_seurat_analysis <- function(seurat_list, npcs, image_dir, obj_dir,
     # # get original name of seurat object
     seurat_name <- names(seurat_list[i])
 
-    # # Subset cells based on nFeature_RNA
-    # seurat_obj <- subset(seurat_obj, subset = nFeature_RNA < 6000)
+    # Subset cells based on nFeature_RNA
+    seurat_obj <- subset(seurat_obj, subset = nFeature_RNA < 6000)
     
-    # # Remove cells with high mitochondrial content
-    # seurat_obj <- PercentageFeatureSet(seurat_obj, pattern = "^MT-",
-    #                                    col.name = "percent.mt")
-    # seurat_obj <- subset(seurat_obj, subset = percent.mt < 20)
+    # Remove cells with high mitochondrial content
+    seurat_obj <- PercentageFeatureSet(seurat_obj, pattern = "^MT-",
+                                       col.name = "percent.mt")
+    seurat_obj <- subset(seurat_obj, subset = percent.mt < 20)
     
-    # # Normalize data
-    # seurat_obj <- NormalizeData(seurat_obj,
-    #                             normalization.method = "LogNormalize",
-    #                             scale.factor = 10000)
+    # Normalize data
+    seurat_obj <- NormalizeData(seurat_obj,
+                                normalization.method = "LogNormalize",
+                                scale.factor = 10000)
     
-    # # Filter genes based on average expression, dispersion, and cutoffs
-    # min_avg_expr <- 0.0125
-    # max_avg_expr <- 3
-    # min_dispersion <- 0.5
+    # Filter genes based on average expression, dispersion, and cutoffs
+    min_avg_expr <- 0.0125
+    max_avg_expr <- 3
+    min_dispersion <- 0.5
     
     # seurat_obj <- FindVariableFeatures(object = seurat_obj,
     #                                    mean.function = ExpMean,
@@ -166,63 +167,68 @@ perform_seurat_analysis <- function(seurat_list, npcs, image_dir, obj_dir,
     #                                    x.low.cutoff = min_avg_expr,
     #                                    x.high.cutoff = max_avg_expr,
     #                                    y.cutoff = min_dispersion)
-    
-    # # Scale data
-    # seurat_obj <- ScaleData(seurat_obj, features = rownames(seurat_obj),
-    #                         vars.to.regress = c("percent.mt", "nCount_RNA"))
-    
-    # # Run PCA
-    # seurat_obj <- RunPCA(seurat_obj, assay = "RNA",
-    #                      features = VariableFeatures(seurat_obj), npcs = npcs)
-    
-    # # Find neighbors
-    # seurat_obj <- FindNeighbors(seurat_obj, dims = 1:npcs, assay = "RNA",
-    #                             verbose = FALSE)
-    
-    # # Find clusters
-    # seurat_obj <- FindClusters(seurat_obj, verbose = FALSE, resolution = res)
-    
-    # # Run tSNE
-    # seurat_obj <- RunTSNE(seurat_obj, dims = 1:npcs)
-    
-    # # Plot tSNE plot
-    # p <- DimPlot(seurat_obj, reduction = "tsne") + NoAxes() +
-    #   ggtitle(paste("tSNE ", seurat_name))
 
-    # # save
-    # ggsave(file.path(image_dir, paste0("tsne_", seurat_name, ".png")), plot = p)
+    seurat_obj <- FindVariableFeatures(object = seurat_obj,
+                                    mean.function = ExpMean,
+                                    dispersion.function = LogVMR,
+                                    mean.cutoff = c(min_avg_expr, max_avg_expr),
+                                    dispersion.cutoff = c(min_dispersion, Inf))
     
-    # # Save Seurat object with seurat_name in the file name
-    # saveRDS(seurat_obj, file.path(obj_dir, paste0("embryoid_", seurat_name,
-    #                                               ".rds")))
+    # Scale data
+    seurat_obj <- ScaleData(seurat_obj, features = rownames(seurat_obj),
+                            vars.to.regress = c("percent.mt", "nCount_RNA"))
+    
+    # Run PCA
+    seurat_obj <- RunPCA(seurat_obj, assay = "RNA",
+                         features = VariableFeatures(seurat_obj), npcs = npcs)
+    
+    # Find neighbors
+    seurat_obj <- FindNeighbors(seurat_obj, dims = 1:npcs, assay = "RNA",
+                                verbose = FALSE)
+    
+    # Find clusters
+    seurat_obj <- FindClusters(seurat_obj, verbose = FALSE, resolution = res)
+    
+    # Run tSNE
+    seurat_obj <- RunTSNE(seurat_obj, dims = 1:npcs)
+    
+    # Plot tSNE plot
+    p <- DimPlot(seurat_obj, reduction = "tsne") + NoAxes() +
+      ggtitle(paste("tSNE ", seurat_name))
+
+    # save
+    ggsave(file.path(image_dir, paste0("tsne_", seurat_name, ".png")), plot = p)
+    
+    # Save Seurat object with seurat_name in the file name
+    saveRDS(seurat_obj, file.path(obj_dir, paste0("embryoid_", seurat_name,
+                                                  ".rds")))
     seurat_obj <- readRDS(file.path(obj_dir, paste0("embryoid_", seurat_name,
                                                     ".rds")))
     
-    # for (clust in unique(seurat_obj[[glue("RNA_snn_res.{res}")]])[[1]]) {
-    #   # Find markers
-    #   markers <- FindMarkers(seurat_obj, ident.1 = toString(clust),
-    #                          logfc.threshold = 0.25, min.pct = 0.25,
-    #                          only.pos = TRUE)
+    for (clust in unique(seurat_obj[[glue("RNA_snn_res.{res}")]])[[1]]) {
+      # Find markers
+      markers <- FindMarkers(seurat_obj, ident.1 = toString(clust),
+                             logfc.threshold = 0.25, min.pct = 0.25,
+                             only.pos = TRUE)
 
-    #   d <- file.path(csv_dir, glue("{seurat_name}_FindMarkers"),
-    #                  glue("res{res}"))
-    #   dir.create(d, showWarnings = FALSE, recursive = TRUE)
+      d <- file.path(csv_dir, glue("{seurat_name}_FindMarkers"),
+                     glue("res{res}"))
+      dir.create(d, showWarnings = FALSE, recursive = TRUE)
 
-    #   # save as CSV
-    #   write.csv(markers, file.path(d, glue("clust{clust}.csv")))
-    # }
+      # save as CSV
+      write.csv(markers, file.path(d, glue("clust{clust}.csv")))
+    }
+
+    pow_dir <- file.path(image_dir, "power_plots", seurat_name,
+                         glue("res{res}"))
+    dir.create(pow_dir, showWarnings = FALSE, recursive = TRUE)
 
     # make power plots
-    integration::make_power_plots(
+    make_power_plots(
       cell_types = unique(seurat_obj[[glue("RNA_snn_res.{res}")]])[[1]],
-      outdir = ,
-      markerfile_command, 
-      marker_dir, plot_class = "avg_log2FC")
-
-  # make_power_plots(cell_types = unique(Idents(seurat_obj)),
-  #               outdir = file.path(out_dir, "post_scrub/images/power_plots"),
-  #               markerfile_command = quote(glue("{cell_type}.csv")),
-  #               marker_dir = d, plot_class = "avg_log2FC")
+      outdir = pow_dir,
+      markerfile_command = quote(glue("clust{cell_type}.csv")),
+      marker_dir = d, plot_class = "avg_log2FC")
 
     # update list entry
     seurat_list[[i]] <- seurat_obj
@@ -232,6 +238,10 @@ perform_seurat_analysis <- function(seurat_list, npcs, image_dir, obj_dir,
 
 ds_list <- list("control" = embryoid_ctl, "nicotine" = embryoid_nic)
 ds_list <- perform_seurat_analysis(ds_list, npcs, image_dir, obj_dir, csv_dir)
+
+# save the outputs (override previous RDSs)
+saveRDS(ds_list[1], file.path(data_dir, "embryoid_control2.rds"))
+saveRDS(ds_list[2], file.path(data_dir, "embryoid_nicotine2.rds"))
 
 # now subset FindMarkers values for p value less than 1%
 

@@ -6,6 +6,12 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 # Construct script paths relative to this script's directory
 R_SCRIPTS_PATH="${SCRIPT_DIR}/analysis_scripts/analysis/"
 
+# make sure all of the scripts are executable
+chmod +x $R_SCRIPTS_PATH/*.R
+
+# load R module
+module load R/4.1.0-foss-2020b
+
 # Call scripts in the desired sequence
 echo "Installing utilities..."
 "${R_SCRIPTS_PATH}create_package.R"

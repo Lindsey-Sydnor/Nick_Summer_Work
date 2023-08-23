@@ -689,27 +689,128 @@ rem_cells_by_umap_coord <- function(obj, umap_mins, umap_maxes) {
 # file_command because naming scheme may differ
 # plot_class needs to correspond to the test ran used to construct markerfile
 #   EX: "power" if "roc"" was run, "avg_log2FC" if "wilcox" was run, etc.
+
+
+#' make_power_plots
+#' @description
+#'  Flush out
+#' @param cell_types (char vector): \cr
+#'  TODO
+#' @param marker_dir (string): \cr
+#'  TODO
+#' @param markerfile_command (string): \cr
+#'  TODO
+#' @param outdir (string): \cr
+#'  TODO
+#' @param ngenes (int = 30): \cr
+#'  TODO
+#' @param plot_class (string = "power"): \cr
+#'  TODO
+#' @import Seurat glue ggplot2
+#' @examples
+#'  TODO
+#' @return N/A
+#' @export
+#'
 make_power_plots <- function(cell_types, marker_dir, markerfile_command, outdir,
-                      ngenes = 30, plot_class = "power") {
+                             ngenes = 30, plot_class = "power") {
   dir.create(outdir, recursive = TRUE, showWarnings = FALSE)
   markers <- list()
   for (cell_type in cell_types) {
-    markers <- as.data.frame(read.csv(file = file.path(marker_dir,
-                             eval(markerfile_command))))
+    markers <- read.csv(file = file.path(marker_dir, eval(markerfile_command)))
     min_power <- min(markers[[plot_class]])
-    # markers$plot_class <- as.factor(markers[[plot_class]])
-    p <- ggplot(markers[1:ngenes,], aes_string(x = plot_class,
-                                               y = reorder("X", plot_class))) +
+    markers$plot_class <- as.factor(markers[[plot_class]])
+    markers <- markers[order(markers[[plot_class]], decreasing = TRUE), ]
+    p <- ggplot(markers[1:ngenes, ], aes_string(
+                                          x = markers[[plot_class]][1:ngenes],
+      y = reorder(markers[["X"]][1:ngenes], markers[[plot_class]][1:ngenes]))) +
       geom_point() +
-      labs(x = "Predictive Power Using {str_to_title(plot_class)}",
-           y = "Gene") +
-      xlim(min_power, 1) + # Set x-axis limits
+      labs(x = "Predictive Power", y = "Gene") +
+      if (plot_class == "power") {
+        xlim(min_power, 1) + # Set x-axis limits
+        labs(x = "Predictive Power", y = "Gene")
+      } else { # assuming it's avg_log2FC (wilcox test)
+        labs(x = "Average Log2FC", y = "Gene")
+      } +
       theme_bw() +
       ggtitle(glue("Cluster: {cell_type}")) +
+      # ggtitle(glue("{gsub('_', ' ', cell_type, fixed = TRUE)}")) +
       theme(plot.title = element_text(hjust = 0.5)) +
       theme(axis.text.y = element_text(size = max(4, 10 -
-                                length(markers[[plot_class]])/10)))
-      ggsave(filename = file.path(outdir, glue("{cell_type}.png")),
-             plot = p)
+                                                  length(markers$power) / 10)))
+    ggsave(filename = file.path(outdir, glue("{cell_type}.png")),
+           plot = p)
   }
+}
+
+#' make_volc_plot
+#' @description
+#'  Flush out
+#' @param data (seurat obj): \cr
+#'  TODO
+#' @param title (string): \cr
+#'  TODO
+#' @param lfc_color (float or int): \cr
+#'  TODO
+#' @param lfc_label (float or int): \cr
+#'  TODO
+#' @param xlab (string = "logFC"): \cr
+#'  TODO
+#' @param ylab (string = "p_adj.glb"): \cr
+#'  TODO\
+#' @param sig_pval (float = 1.3): \cr
+#'  TODO\
+#' @import Seurat glue ggplot2 ggrepel
+#' @examples
+#'  TODO
+#' @return N/A
+#' @export
+#'
+make_volc_plot <- function(data, title, lfc_color, lfc_label, xlab = "logFC",
+                           ylab = "p_adj.glb", sig_pval = 1.3) {
+  p <- ggplot(data, aes_string(x = xlab, y = paste0("-log10(", ylab, ")"),
+                               size = "1.75", alpha = "0.8")) +
+    geom_point(size = 1, color = "dark gray") +
+    theme_bw(base_size = 12) +
+    xlab("log2[FC]") + ylab("-log10[P value]") +
+    theme(legend.position = "none") +
+    scale_y_continuous(trans = "log1p") +
+    geom_vline(xintercept = 0, colour = "black") +
+    geom_hline(yintercept = 0, colour = "black") +
+    geom_point(data = subset(data, get(xlab) < -lfc_color &
+                             -log10(get(ylab)) > sig_pval),
+               size = 1, color = "purple") +
+    geom_point(data = subset(data, get(xlab) > lfc_color &
+                             -log10(get(ylab)) > sig_pval),
+               size = 1, color = "turquoise") +
+    geom_text_repel(data = subset(data, get(xlab) < -lfc_label &
+                                  -log10(get(ylab)) > 2),
+                    aes(label = gene), color = "black",
+                    arrow = arrow(length = unit(0.02, "npc")),
+                    box.padding = 1, size = 2) +
+    geom_text_repel(data = subset(data, get(xlab) > lfc_label &
+                                  -log10(get(ylab)) > 2),
+                    aes(label = gene), color = "black",
+                    arrow = arrow(length = unit(0.02, "npc")), box.padding = 1,
+                    size = 2) +
+    geom_hline(yintercept = sig_pval, linetype = "dashed",
+               colour = "black") +
+    geom_vline(xintercept = lfc_color, linetype = "dashed",
+               colour = "black") +
+    geom_vline(xintercept = -lfc_color, linetype = "dashed",
+               colour = "black") +
+    labs(title = title)
+
+  # Label the significant logFC cutoff vertical line
+  y_limits <- ggplot_build(p)$layout$panel_params[[1]]$y.range
+  y_label <- 0.3 * y_limits[1]
+  
+  # Add annotations for vertical lines
+  p <- p +
+    annotate("text", x = lfc_color, y = y_label, label = lfc_color,
+             hjust = 1.25, color = "black") +
+    annotate("text", x = -lfc_color, y = y_label, label = -lfc_color,
+             hjust = 1.25, color = "black")
+  
+  return(p)
 }
