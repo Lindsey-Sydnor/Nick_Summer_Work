@@ -725,19 +725,14 @@ make_power_plots <- function(cell_types, marker_dir, markerfile_command, outdir,
                                           x = markers[[plot_class]][1:ngenes],
       y = reorder(markers[["X"]][1:ngenes], markers[[plot_class]][1:ngenes]))) +
       geom_point() +
-      labs(x = "Predictive Power", y = "Gene") +
-      if (plot_class == "power") {
-        xlim(min_power, 1) + # Set x-axis limits
-        labs(x = "Predictive Power", y = "Gene")
-      } else { # assuming it's avg_log2FC (wilcox test)
-        labs(x = "Average Log2FC", y = "Gene")
-      } +
+      labs(x = if (plot_class == "power") "Predictive Power" else
+           "Average Log2FC", y = "Gene") +
       theme_bw() +
       ggtitle(glue("Cluster: {cell_type}")) +
       # ggtitle(glue("{gsub('_', ' ', cell_type, fixed = TRUE)}")) +
       theme(plot.title = element_text(hjust = 0.5)) +
       theme(axis.text.y = element_text(size = max(4, 10 -
-                                                  length(markers$power) / 10)))
+                                          length(markers[[plot_class]]) / 10)))
     ggsave(filename = file.path(outdir, glue("{cell_type}.png")),
            plot = p)
   }
