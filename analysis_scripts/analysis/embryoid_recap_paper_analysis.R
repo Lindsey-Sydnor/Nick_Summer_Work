@@ -6,6 +6,8 @@
 #   Meant to be an exact replication of embryoid body dataset analysis as in
 #   paper (not my chosen presets)
 
+# TODO: uncomment sections performing preprocesing for final upload
+
 my_packages <- c("Seurat", "Matrix", "glue", "ggplot2", "integration")
 
 # define repo to install from
@@ -218,7 +220,7 @@ perform_seurat_analysis <- function(seurat_list, npcs, image_dir, obj_dir,
       # save as CSV
       write.csv(markers, file.path(d, glue("clust{clust}.csv")))
     }
-
+s
     pow_dir <- file.path(image_dir, "power_plots", seurat_name,
                          glue("res{res}"))
     dir.create(pow_dir, showWarnings = FALSE, recursive = TRUE)
